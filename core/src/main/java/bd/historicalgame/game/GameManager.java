@@ -23,34 +23,6 @@ public class GameManager {
         currentState = state;
     }
 
-    public void startGame() {
-        currentState = GameState.PLAYING;
-    }
-
-    public void pauseGame() {
-        if (currentState == GameState.PLAYING) {
-            currentState = GameState.PAUSED;
-        }
-    }
-
-    public void resumeGame() {
-        if (currentState == GameState.PAUSED) {
-            currentState = GameState.PLAYING;
-        }
-    }
-
-    public void openDialogue() {
-        currentState = GameState.DIALOGUE;
-    }
-
-    public void startCinematic() {
-        currentState = GameState.CINEMATIC;
-    }
-
-    public void gameOver() {
-        currentState = GameState.GAME_OVER;
-    }
-
     public boolean isPlaying() {
         return currentState == GameState.PLAYING;
     }
