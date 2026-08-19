@@ -1,7 +1,5 @@
 package bd.historicalgame.player;
 
-import bd.historicalgame.game.GameConfig;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 
@@ -13,6 +11,9 @@ public class Player {
     private float x;
     private float y;
 
+    private final float speed = 250f;
+    private final float size = 40f;
+
     public Player(float startX, float startY) {
         this.x = startX;
         this.y = startY;
@@ -20,35 +21,38 @@ public class Player {
 
     public void update(float delta) {
 
-        float moveX = 0f;
-        float moveY = 0f;
+        float dx = 0;
+        float dy = 0;
 
-        if (Gdx.input.isKeyPressed(Input.Keys.W)
-                || Gdx.input.isKeyPressed(Input.Keys.UP)) {
-            moveY += 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+            dy += 1;
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.S)
-                || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
-            moveY -= 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
+            dy -= 1;
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.A)
-                || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
-            moveX -= 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+            dx -= 1;
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.D)
-                || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
-            moveX += 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
+            dx += 1;
         }
 
-        x += moveX * GameConfig.PLAYER_SPEED * delta;
-        y += moveY * GameConfig.PLAYER_SPEED * delta;
+        // Prevent diagonal movement from being faster.
+        if (dx != 0 && dy != 0) {
+            float length = (float) Math.sqrt(dx * dx + dy * dy);
+            dx /= length;
+            dy /= length;
+        }
 
-        // Keep player inside the world.
-        x = Math.max(0f, Math.min(x, GameConfig.WORLD_WIDTH));
-        y = Math.max(0f, Math.min(y, GameConfig.WORLD_HEIGHT));
+        x += dx * speed * delta;
+        y += dy * speed * delta;
+
+        // Keep player inside the screen.
+        x = Math.max(0, Math.min(x, 1280 - size));
+        y = Math.max(0, Math.min(y, 720 - size));
     }
 
     public float getX() {
@@ -57,5 +61,9 @@ public class Player {
 
     public float getY() {
         return y;
+    }
+
+    public float getSize() {
+        return size;
     }
 }
