@@ -1,8 +1,5 @@
 package bd.historicalgame.world.level1;
 
-import bd.historicalgame.game.GameConfig;
-import bd.historicalgame.player.Player;
-
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -16,63 +13,34 @@ import com.badlogic.gdx.graphics.g3d.ModelBatch;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
+import com.badlogic.gdx.graphics.g3d.utils.CameraInputController;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 
 /**
  * Level 1 world for the 2x12 historical adventure.
  *
- * Includes:
- * - 3D environment
- * - Lighting
- * - Ground
+ * This version provides:
+ * - 3D camera
+ * - Ambient light
+ * - Directional sunlight
+ * - Procedural ground
  * - Main building
- * - Classrooms
+ * - Classroom blocks
  * - Courtyard
- * - Gate
- * - 3D player
- * - Player movement
- * - Third-person camera
+ * - Gate pillars
+ * - Camera mouse/keyboard control
  */
 public class Level1World implements Disposable {
-
-    // =========================================================
-    // RENDERING
-    // =========================================================
 
     private final ModelBatch modelBatch;
     private final Environment environment;
     private final Array<ModelInstance> instances;
     private final Array<Model> models;
 
-    // =========================================================
-    // CAMERA
-    // =========================================================
-
     private PerspectiveCamera camera;
-
-    /*
-     * Temporary vector used for camera calculations.
-     */
-    private final Vector3 cameraOffset = new Vector3(
-        0f,
-        8f,
-        14f
-    );
-
-    // =========================================================
-    // PLAYER
-    // =========================================================
-
-    private Player player;
-    private Model playerModel;
-    private ModelInstance playerInstance;
-
-    // =========================================================
-    // CONSTRUCTOR
-    // =========================================================
+    private CameraInputController cameraController;
 
     public Level1World() {
 
@@ -85,7 +53,6 @@ public class Level1World implements Disposable {
 
         createLighting();
         createCamera();
-        createPlayer();
         createWorld();
     }
 
@@ -96,7 +63,7 @@ public class Level1World implements Disposable {
     private void createLighting() {
 
         /*
-         * Ambient light.
+         * Ambient light
          */
         environment.set(
             ColorAttribute.createAmbient(
@@ -109,6 +76,10 @@ public class Level1World implements Disposable {
 
         /*
          * Directional sunlight.
+         *
+         * Important:
+         * DirectionalLight is used here instead of the
+         * non-existent ColorAttribute.createDirectional().
          */
         environment.add(
             new DirectionalLight().set(
@@ -131,12 +102,15 @@ public class Level1World implements Disposable {
         float width = Gdx.graphics.getWidth();
         float height = Gdx.graphics.getHeight();
 
+        /*
+         * Prevent invalid viewport dimensions.
+         */
         if (width <= 0) {
-            width = GameConfig.WIDTH;
+            width = 1280f;
         }
 
         if (height <= 0) {
-            height = GameConfig.HEIGHT;
+            height = 720f;
         }
 
         camera = new PerspectiveCamera(
@@ -146,7 +120,7 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Initial camera position.
+         * Initial player/camera position.
          */
         camera.position.set(
             0f,
@@ -154,132 +128,33 @@ public class Level1World implements Disposable {
             22f
         );
 
-        camera.near = 0.1f;
-        camera.far = 500f;
-
+        /*
+         * Look toward the center of the Level 1 world.
+         */
         camera.lookAt(
             0f,
             2f,
             0f
         );
 
-        camera.update();
-    }
-
-    // =========================================================
-    // PLAYER
-    // =========================================================
-
-    private void createPlayer() {
-
-        /*
-         * Player starts near the Level 1 gate/courtyard.
-         *
-         * X = 0
-         * Y = 1
-         * Z = 10
-         */
-        player = new Player(
-            0f,
-            1f,
-            10f,
-            GameConfig.PLAYER_SPEED
-        );
-
-        ModelBuilder builder =
-            new ModelBuilder();
-
-        long attributes =
-            VertexAttributes.Usage.Position |
-            VertexAttributes.Usage.Normal;
-
-        /*
-         * Temporary player body.
-         *
-         * This is only a placeholder.
-         * Later we will replace it with
-         * the actual character model.
-         */
-        playerModel =
-            builder.createBox(
-                1.2f,
-                2f,
-                1.2f,
-                new Material(
-                    new Attribute[]{
-                        ColorAttribute.createDiffuse(
-                            Color.valueOf("C98B5A")
-                        )
-                    }
-                ),
-                attributes
-            );
-
-        models.add(playerModel);
-
-        playerInstance =
-            new ModelInstance(playerModel);
-
-        /*
-         * Position the player.
-         */
-        updatePlayerModel();
-
-        instances.add(playerInstance);
-    }
-
-    // =========================================================
-    // PLAYER MODEL UPDATE
-    // =========================================================
-
-    private void updatePlayerModel() {
-
-        if (player == null ||
-            playerInstance == null) {
-            return;
-        }
-
-        /*
-         * Player Y position represents the
-         * center of the body.
-         */
-        playerInstance.transform.setToTranslation(
-            player.getX(),
-            player.getY(),
-            player.getZ()
-        );
-    }
-
-    // =========================================================
-    // CAMERA FOLLOW
-    // =========================================================
-
-    private void updateCamera() {
-
-        if (camera == null ||
-            player == null) {
-            return;
-        }
-
-        /*
-         * Camera follows behind the player.
-         */
-        camera.position.set(
-            player.getX() + cameraOffset.x,
-            player.getY() + cameraOffset.y,
-            player.getZ() + cameraOffset.z
-        );
-
-        /*
-         * Look slightly above player's center.
-         */
-        camera.lookAt(
-            player.getX(),
-            player.getY() + 0.8f,
-            player.getZ()
-        );
+        camera.near = 0.1f;
+        camera.far = 500f;
 
         camera.update();
+
+        /*
+         * Camera controller.
+         */
+        cameraController =
+            new CameraInputController(camera);
+
+        /*
+         * Make the camera controller receive
+         * mouse/keyboard input.
+         */
+        Gdx.input.setInputProcessor(
+            cameraController
+        );
     }
 
     // =========================================================
@@ -536,22 +411,13 @@ public class Level1World implements Disposable {
 
     public void update(float delta) {
 
-        /*
-         * Update player movement.
-         */
-        if (player != null) {
-            player.update(delta);
+        if (cameraController != null) {
+            cameraController.update();
         }
 
-        /*
-         * Synchronize visible player model.
-         */
-        updatePlayerModel();
-
-        /*
-         * Follow player.
-         */
-        updateCamera();
+        if (camera != null) {
+            camera.update();
+        }
     }
 
     // =========================================================
@@ -566,10 +432,6 @@ public class Level1World implements Disposable {
         int height =
             Gdx.graphics.getHeight();
 
-        if (height <= 0) {
-            height = 1;
-        }
-
         Gdx.gl.glViewport(
             0,
             0,
@@ -578,14 +440,15 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Enable depth testing.
+         * Enable depth testing so that
+         * 3D objects render correctly.
          */
         Gdx.gl.glEnable(
             GL20.GL_DEPTH_TEST
         );
 
         /*
-         * Background / sky color.
+         * Sky/background color.
          */
         Gdx.gl.glClearColor(
             0.08f,
@@ -600,7 +463,7 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Render 3D world.
+         * Render all Level 1 models.
          */
         modelBatch.begin(camera);
 
@@ -613,15 +476,11 @@ public class Level1World implements Disposable {
     }
 
     // =========================================================
-    // GETTERS
+    // CAMERA ACCESS
     // =========================================================
 
     public PerspectiveCamera getCamera() {
         return camera;
-    }
-
-    public Player getPlayer() {
-        return player;
     }
 
     // =========================================================
@@ -636,7 +495,6 @@ public class Level1World implements Disposable {
         }
 
         for (Model model : models) {
-
             if (model != null) {
                 model.dispose();
             }
@@ -644,9 +502,5 @@ public class Level1World implements Disposable {
 
         models.clear();
         instances.clear();
-
-        player = null;
-        playerInstance = null;
-        playerModel = null;
     }
 }
