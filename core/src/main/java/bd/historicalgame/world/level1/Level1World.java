@@ -24,16 +24,22 @@ import com.badlogic.gdx.utils.Disposable;
 /**
  * Level 1 world for the 2x12 historical adventure.
  *
- * Includes:
+ * Current features:
+ *
  * - 3D environment
- * - Lighting
- * - Ground
+ * - Directional lighting
+ * - Ambient lighting
+ * - Large ground
  * - Main building
- * - Classrooms
+ * - Left classroom
+ * - Right classroom
  * - Courtyard
- * - Gate
+ * - Gate pillars
  * - 3D player
- * - Player movement
+ * - WASD movement
+ * - Player/world boundary
+ * - Building collision
+ * - Gate collision
  * - Third-person camera
  */
 public class Level1World implements Disposable {
@@ -43,8 +49,11 @@ public class Level1World implements Disposable {
     // =========================================================
 
     private final ModelBatch modelBatch;
+
     private final Environment environment;
+
     private final Array<ModelInstance> instances;
+
     private final Array<Model> models;
 
     // =========================================================
@@ -54,20 +63,27 @@ public class Level1World implements Disposable {
     private PerspectiveCamera camera;
 
     /*
-     * Temporary vector used for camera calculations.
+     * Third-person camera offset.
+     *
+     * X = horizontal offset
+     * Y = height
+     * Z = distance behind player
      */
-    private final Vector3 cameraOffset = new Vector3(
-        0f,
-        8f,
-        14f
-    );
+    private final Vector3 cameraOffset =
+        new Vector3(
+            0f,
+            7f,
+            11f
+        );
 
     // =========================================================
     // PLAYER
     // =========================================================
 
     private Player player;
+
     private Model playerModel;
+
     private ModelInstance playerInstance;
 
     // =========================================================
@@ -76,17 +92,34 @@ public class Level1World implements Disposable {
 
     public Level1World() {
 
-        modelBatch = new ModelBatch();
+        modelBatch =
+            new ModelBatch();
 
-        environment = new Environment();
+        environment =
+            new Environment();
 
-        instances = new Array<>();
-        models = new Array<>();
+        instances =
+            new Array<>();
 
+        models =
+            new Array<>();
+
+        /*
+         * Initialization order is important.
+         */
         createLighting();
+
         createCamera();
+
         createPlayer();
+
         createWorld();
+
+        /*
+         * Collision must be created
+         * after the player exists.
+         */
+        createCollisionObjects();
     }
 
     // =========================================================
@@ -97,6 +130,9 @@ public class Level1World implements Disposable {
 
         /*
          * Ambient light.
+         *
+         * Prevents the world from becoming
+         * completely dark on unlit surfaces.
          */
         environment.set(
             ColorAttribute.createAmbient(
@@ -128,9 +164,15 @@ public class Level1World implements Disposable {
 
     private void createCamera() {
 
-        float width = Gdx.graphics.getWidth();
-        float height = Gdx.graphics.getHeight();
+        float width =
+            Gdx.graphics.getWidth();
 
+        float height =
+            Gdx.graphics.getHeight();
+
+        /*
+         * Fallback dimensions.
+         */
         if (width <= 0) {
             width = GameConfig.WIDTH;
         }
@@ -139,11 +181,12 @@ public class Level1World implements Disposable {
             height = GameConfig.HEIGHT;
         }
 
-        camera = new PerspectiveCamera(
-            67f,
-            width,
-            height
-        );
+        camera =
+            new PerspectiveCamera(
+                67f,
+                width,
+                height
+            );
 
         /*
          * Initial camera position.
@@ -151,12 +194,19 @@ public class Level1World implements Disposable {
         camera.position.set(
             0f,
             8f,
-            22f
+            21f
         );
 
+        /*
+         * Camera clipping.
+         */
         camera.near = 0.1f;
+
         camera.far = 500f;
 
+        /*
+         * Initial camera target.
+         */
         camera.lookAt(
             0f,
             2f,
@@ -173,18 +223,20 @@ public class Level1World implements Disposable {
     private void createPlayer() {
 
         /*
-         * Player starts near the Level 1 gate/courtyard.
+         * Player starts inside the campus,
+         * near the southern gate.
          *
          * X = 0
          * Y = 1
          * Z = 10
          */
-        player = new Player(
-            0f,
-            1f,
-            10f,
-            GameConfig.PLAYER_SPEED
-        );
+        player =
+            new Player(
+                0f,
+                1f,
+                10f,
+                GameConfig.PLAYER_SPEED
+            );
 
         ModelBuilder builder =
             new ModelBuilder();
@@ -196,9 +248,8 @@ public class Level1World implements Disposable {
         /*
          * Temporary player body.
          *
-         * This is only a placeholder.
-         * Later we will replace it with
-         * the actual character model.
+         * This will later be replaced
+         * with a proper character model.
          */
         playerModel =
             builder.createBox(
@@ -208,24 +259,29 @@ public class Level1World implements Disposable {
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
-                            Color.valueOf("C98B5A")
+                            Color.valueOf(
+                                "C98B5A"
+                            )
                         )
                     }
                 ),
                 attributes
             );
 
-        models.add(playerModel);
+        models.add(
+            playerModel
+        );
 
         playerInstance =
-            new ModelInstance(playerModel);
+            new ModelInstance(
+                playerModel
+            );
 
-        /*
-         * Position the player.
-         */
         updatePlayerModel();
 
-        instances.add(playerInstance);
+        instances.add(
+            playerInstance
+        );
     }
 
     // =========================================================
@@ -236,18 +292,20 @@ public class Level1World implements Disposable {
 
         if (player == null ||
             playerInstance == null) {
+
             return;
         }
 
         /*
-         * Player Y position represents the
-         * center of the body.
+         * Player Y is the center of
+         * the temporary player body.
          */
-        playerInstance.transform.setToTranslation(
-            player.getX(),
-            player.getY(),
-            player.getZ()
-        );
+        playerInstance.transform
+            .setToTranslation(
+                player.getX(),
+                player.getY(),
+                player.getZ()
+            );
     }
 
     // =========================================================
@@ -258,20 +316,27 @@ public class Level1World implements Disposable {
 
         if (camera == null ||
             player == null) {
+
             return;
         }
 
         /*
-         * Camera follows behind the player.
+         * Follow the player.
          */
         camera.position.set(
-            player.getX() + cameraOffset.x,
-            player.getY() + cameraOffset.y,
-            player.getZ() + cameraOffset.z
+            player.getX() +
+                cameraOffset.x,
+
+            player.getY() +
+                cameraOffset.y,
+
+            player.getZ() +
+                cameraOffset.z
         );
 
         /*
-         * Look slightly above player's center.
+         * Look slightly above the
+         * player's center.
          */
         camera.lookAt(
             player.getX(),
@@ -295,15 +360,33 @@ public class Level1World implements Disposable {
             VertexAttributes.Usage.Position |
             VertexAttributes.Usage.Normal;
 
-        createGround(builder, attributes);
+        /*
+         * Main Level 1 environment.
+         */
+        createGround(
+            builder,
+            attributes
+        );
 
-        createMainBuilding(builder, attributes);
+        createMainBuilding(
+            builder,
+            attributes
+        );
 
-        createClassrooms(builder, attributes);
+        createClassrooms(
+            builder,
+            attributes
+        );
 
-        createCourtyard(builder, attributes);
+        createCourtyard(
+            builder,
+            attributes
+        );
 
-        createGate(builder, attributes);
+        createGate(
+            builder,
+            attributes
+        );
     }
 
     // =========================================================
@@ -320,28 +403,41 @@ public class Level1World implements Disposable {
                 60f,
                 0.4f,
                 40f,
+
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
-                            Color.valueOf("4B6B3C")
+                            Color.valueOf(
+                                "4B6B3C"
+                            )
                         )
                     }
                 ),
+
                 attributes
             );
 
-        models.add(groundModel);
+        models.add(
+            groundModel
+        );
 
         ModelInstance ground =
-            new ModelInstance(groundModel);
+            new ModelInstance(
+                groundModel
+            );
 
+        /*
+         * Ground top is approximately Y = 0.
+         */
         ground.transform.setToTranslation(
             0f,
             -0.2f,
             0f
         );
 
-        instances.add(ground);
+        instances.add(
+            ground
+        );
     }
 
     // =========================================================
@@ -358,28 +454,44 @@ public class Level1World implements Disposable {
                 18f,
                 7f,
                 8f,
+
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
-                            Color.valueOf("D8C7A3")
+                            Color.valueOf(
+                                "D8C7A3"
+                            )
                         )
                     }
                 ),
+
                 attributes
             );
 
-        models.add(buildingModel);
+        models.add(
+            buildingModel
+        );
 
         ModelInstance building =
-            new ModelInstance(buildingModel);
+            new ModelInstance(
+                buildingModel
+            );
 
+        /*
+         * Main building:
+         *
+         * X: -9 → +9
+         * Z: -14 → -6
+         */
         building.transform.setToTranslation(
             0f,
             3.5f,
             -10f
         );
 
-        instances.add(building);
+        instances.add(
+            building
+        );
     }
 
     // =========================================================
@@ -396,45 +508,75 @@ public class Level1World implements Disposable {
                 12f,
                 5f,
                 7f,
+
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
-                            Color.valueOf("B8A47A")
+                            Color.valueOf(
+                                "B8A47A"
+                            )
                         )
                     }
                 ),
+
                 attributes
             );
 
-        models.add(classroomModel);
+        models.add(
+            classroomModel
+        );
 
-        /*
-         * Left classroom.
-         */
+        // -----------------------------------------------------
+        // LEFT CLASSROOM
+        // -----------------------------------------------------
+
         ModelInstance leftClassroom =
-            new ModelInstance(classroomModel);
-
-        leftClassroom.transform.setToTranslation(
-            -17f,
-            2.5f,
-            -3f
-        );
-
-        instances.add(leftClassroom);
+            new ModelInstance(
+                classroomModel
+            );
 
         /*
-         * Right classroom.
+         * Left classroom:
+         *
+         * X: -23 → -11
+         * Z: -6.5 → +0.5
          */
-        ModelInstance rightClassroom =
-            new ModelInstance(classroomModel);
+        leftClassroom.transform
+            .setToTranslation(
+                -17f,
+                2.5f,
+                -3f
+            );
 
-        rightClassroom.transform.setToTranslation(
-            17f,
-            2.5f,
-            -3f
+        instances.add(
+            leftClassroom
         );
 
-        instances.add(rightClassroom);
+        // -----------------------------------------------------
+        // RIGHT CLASSROOM
+        // -----------------------------------------------------
+
+        ModelInstance rightClassroom =
+            new ModelInstance(
+                classroomModel
+            );
+
+        /*
+         * Right classroom:
+         *
+         * X: +11 → +23
+         * Z: -6.5 → +0.5
+         */
+        rightClassroom.transform
+            .setToTranslation(
+                17f,
+                2.5f,
+                -3f
+            );
+
+        instances.add(
+            rightClassroom
+        );
     }
 
     // =========================================================
@@ -451,28 +593,45 @@ public class Level1World implements Disposable {
                 18f,
                 0.5f,
                 14f,
+
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
-                            Color.valueOf("8E8068")
+                            Color.valueOf(
+                                "8E8068"
+                            )
                         )
                     }
                 ),
+
                 attributes
             );
 
-        models.add(courtyardModel);
-
-        ModelInstance courtyard =
-            new ModelInstance(courtyardModel);
-
-        courtyard.transform.setToTranslation(
-            0f,
-            0.25f,
-            5f
+        models.add(
+            courtyardModel
         );
 
-        instances.add(courtyard);
+        ModelInstance courtyard =
+            new ModelInstance(
+                courtyardModel
+            );
+
+        /*
+         * Courtyard center:
+         *
+         * X = 0
+         * Z = 5
+         */
+        courtyard.transform
+            .setToTranslation(
+                0f,
+                0.25f,
+                5f
+            );
+
+        instances.add(
+            courtyard
+        );
     }
 
     // =========================================================
@@ -489,45 +648,160 @@ public class Level1World implements Disposable {
                 2f,
                 8f,
                 2f,
+
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
-                            Color.valueOf("C5B28A")
+                            Color.valueOf(
+                                "C5B28A"
+                            )
                         )
                     }
                 ),
+
                 attributes
             );
 
-        models.add(pillarModel);
+        models.add(
+            pillarModel
+        );
 
-        /*
-         * Left gate pillar.
-         */
+        // -----------------------------------------------------
+        // LEFT PILLAR
+        // -----------------------------------------------------
+
         ModelInstance leftPillar =
-            new ModelInstance(pillarModel);
-
-        leftPillar.transform.setToTranslation(
-            -12f,
-            4f,
-            15f
-        );
-
-        instances.add(leftPillar);
+            new ModelInstance(
+                pillarModel
+            );
 
         /*
-         * Right gate pillar.
+         * Left pillar:
+         *
+         * X: -13 → -11
+         * Z: 14 → 16
          */
-        ModelInstance rightPillar =
-            new ModelInstance(pillarModel);
+        leftPillar.transform
+            .setToTranslation(
+                -12f,
+                4f,
+                15f
+            );
 
-        rightPillar.transform.setToTranslation(
-            12f,
-            4f,
-            15f
+        instances.add(
+            leftPillar
         );
 
-        instances.add(rightPillar);
+        // -----------------------------------------------------
+        // RIGHT PILLAR
+        // -----------------------------------------------------
+
+        ModelInstance rightPillar =
+            new ModelInstance(
+                pillarModel
+            );
+
+        /*
+         * Right pillar:
+         *
+         * X: +11 → +13
+         * Z: 14 → 16
+         */
+        rightPillar.transform
+            .setToTranslation(
+                12f,
+                4f,
+                15f
+            );
+
+        instances.add(
+            rightPillar
+        );
+    }
+
+    // =========================================================
+    // COLLISION
+    // =========================================================
+
+    private void createCollisionObjects() {
+
+        if (player == null) {
+            return;
+        }
+
+        /*
+         * =====================================================
+         * MAIN BUILDING
+         * =====================================================
+         *
+         * Actual building:
+         *
+         * X = -9 → +9
+         * Z = -14 → -6
+         *
+         * A small margin is added so the player
+         * does not visually enter the wall.
+         */
+        player.addCollision(
+            -9.6f,
+            -14.6f,
+            19.2f,
+            8.0f
+        );
+
+        /*
+         * =====================================================
+         * LEFT CLASSROOM
+         * =====================================================
+         *
+         * X = -23 → -11
+         * Z = -6.5 → +0.5
+         */
+        player.addCollision(
+            -23.6f,
+            -7.1f,
+            12.6f,
+            7.6f
+        );
+
+        /*
+         * =====================================================
+         * RIGHT CLASSROOM
+         * =====================================================
+         *
+         * X = +11 → +23
+         * Z = -6.5 → +0.5
+         */
+        player.addCollision(
+            11.0f,
+            -7.1f,
+            12.6f,
+            7.6f
+        );
+
+        /*
+         * =====================================================
+         * LEFT GATE PILLAR
+         * =====================================================
+         */
+        player.addCollision(
+            -13.0f,
+            14.0f,
+            2.0f,
+            2.0f
+        );
+
+        /*
+         * =====================================================
+         * RIGHT GATE PILLAR
+         * =====================================================
+         */
+        player.addCollision(
+            11.0f,
+            14.0f,
+            2.0f,
+            2.0f
+        );
     }
 
     // =========================================================
@@ -540,16 +814,17 @@ public class Level1World implements Disposable {
          * Update player movement.
          */
         if (player != null) {
+
             player.update(delta);
         }
 
         /*
-         * Synchronize visible player model.
+         * Synchronize visible 3D player.
          */
         updatePlayerModel();
 
         /*
-         * Follow player.
+         * Update third-person camera.
          */
         updateCamera();
     }
@@ -566,10 +841,17 @@ public class Level1World implements Disposable {
         int height =
             Gdx.graphics.getHeight();
 
+        if (width <= 0) {
+            width = GameConfig.WIDTH;
+        }
+
         if (height <= 0) {
             height = 1;
         }
 
+        /*
+         * Set viewport.
+         */
         Gdx.gl.glViewport(
             0,
             0,
@@ -585,7 +867,7 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Background / sky color.
+         * Clear background.
          */
         Gdx.gl.glClearColor(
             0.08f,
@@ -600,9 +882,11 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Render 3D world.
+         * Render 3D scene.
          */
-        modelBatch.begin(camera);
+        modelBatch.begin(
+            camera
+        );
 
         modelBatch.render(
             instances,
@@ -635,6 +919,9 @@ public class Level1World implements Disposable {
             modelBatch.dispose();
         }
 
+        /*
+         * Dispose every generated model.
+         */
         for (Model model : models) {
 
             if (model != null) {
@@ -643,10 +930,13 @@ public class Level1World implements Disposable {
         }
 
         models.clear();
+
         instances.clear();
 
         player = null;
+
         playerInstance = null;
+
         playerModel = null;
     }
 }
