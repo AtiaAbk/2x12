@@ -4,10 +4,13 @@ import bd.historicalgame.game.GameConfig;
 import bd.historicalgame.player.Player;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.VertexAttributes;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g3d.Attribute;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.Material;
@@ -17,62 +20,78 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
-import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 
 /**
- * Level 1 world for the 2x12 historical adventure.
+ * Level 1 world for 2x12.
  *
- * Includes:
- * - 3D environment
- * - Lighting
- * - Ground
- * - Main building
- * - Classrooms
- * - Courtyard
- * - Gate
- * - 3D player
- * - Player movement
+ * Presentation prototype features:
+ *
+ * - 3D campus
+ * - Player
+ * - WASD movement
  * - Third-person camera
+ * - Building collision
+ * - Mission objectives
+ * - Objective counter
+ * - Level completion
  */
 public class Level1World implements Disposable {
 
-    // =========================================================
-    // RENDERING
-    // =========================================================
+    // =====================================================
+    // 3D RENDERING
+    // =====================================================
 
     private final ModelBatch modelBatch;
     private final Environment environment;
+
     private final Array<ModelInstance> instances;
     private final Array<Model> models;
 
-    // =========================================================
+    // =====================================================
+    // 2D UI
+    // =====================================================
+
+    private final SpriteBatch uiBatch;
+    private final BitmapFont font;
+
+    // =====================================================
     // CAMERA
-    // =========================================================
+    // =====================================================
 
     private PerspectiveCamera camera;
 
-    /*
-     * Temporary vector used for camera calculations.
-     */
-    private final Vector3 cameraOffset = new Vector3(
-        0f,
-        8f,
-        14f
-    );
+    private static final float CAMERA_X = 0f;
+    private static final float CAMERA_Y = 7f;
+    private static final float CAMERA_Z = 12f;
 
-    // =========================================================
+    // =====================================================
     // PLAYER
-    // =========================================================
+    // =====================================================
 
     private Player player;
+
     private Model playerModel;
     private ModelInstance playerInstance;
 
-    // =========================================================
+    // =====================================================
+    // MISSION
+    // =====================================================
+
+    private int objectivesCompleted = 0;
+
+    private static final int TOTAL_OBJECTIVES = 3;
+
+    private boolean courtyardVisited = false;
+    private boolean classroomVisited = false;
+    private boolean mainBuildingVisited = false;
+
+    private boolean levelComplete = false;
+
+    // =====================================================
     // CONSTRUCTOR
-    // =========================================================
+    // =====================================================
 
     public Level1World() {
 
@@ -83,21 +102,26 @@ public class Level1World implements Disposable {
         instances = new Array<>();
         models = new Array<>();
 
+        uiBatch = new SpriteBatch();
+        font = new BitmapFont();
+
         createLighting();
+
         createCamera();
+
         createPlayer();
+
         createWorld();
+
+        createCollisions();
     }
 
-    // =========================================================
+    // =====================================================
     // LIGHTING
-    // =========================================================
+    // =====================================================
 
     private void createLighting() {
 
-        /*
-         * Ambient light.
-         */
         environment.set(
             ColorAttribute.createAmbient(
                 0.65f,
@@ -107,9 +131,6 @@ public class Level1World implements Disposable {
             )
         );
 
-        /*
-         * Directional sunlight.
-         */
         environment.add(
             new DirectionalLight().set(
                 1.0f,
@@ -122,14 +143,17 @@ public class Level1World implements Disposable {
         );
     }
 
-    // =========================================================
+    // =====================================================
     // CAMERA
-    // =========================================================
+    // =====================================================
 
     private void createCamera() {
 
-        float width = Gdx.graphics.getWidth();
-        float height = Gdx.graphics.getHeight();
+        float width =
+            Gdx.graphics.getWidth();
+
+        float height =
+            Gdx.graphics.getHeight();
 
         if (width <= 0) {
             width = GameConfig.WIDTH;
@@ -139,23 +163,21 @@ public class Level1World implements Disposable {
             height = GameConfig.HEIGHT;
         }
 
-        camera = new PerspectiveCamera(
-            67f,
-            width,
-            height
-        );
+        camera =
+            new PerspectiveCamera(
+                67f,
+                width,
+                height
+            );
 
-        /*
-         * Initial camera position.
-         */
+        camera.near = 0.1f;
+        camera.far = 500f;
+
         camera.position.set(
             0f,
             8f,
             22f
         );
-
-        camera.near = 0.1f;
-        camera.far = 500f;
 
         camera.lookAt(
             0f,
@@ -166,25 +188,22 @@ public class Level1World implements Disposable {
         camera.update();
     }
 
-    // =========================================================
+    // =====================================================
     // PLAYER
-    // =========================================================
+    // =====================================================
 
     private void createPlayer() {
 
         /*
-         * Player starts near the Level 1 gate/courtyard.
-         *
-         * X = 0
-         * Y = 1
-         * Z = 10
+         * Start near the campus gate.
          */
-        player = new Player(
-            0f,
-            1f,
-            10f,
-            GameConfig.PLAYER_SPEED
-        );
+        player =
+            new Player(
+                0f,
+                1f,
+                10f,
+                GameConfig.PLAYER_SPEED
+            );
 
         ModelBuilder builder =
             new ModelBuilder();
@@ -193,13 +212,6 @@ public class Level1World implements Disposable {
             VertexAttributes.Usage.Position |
             VertexAttributes.Usage.Normal;
 
-        /*
-         * Temporary player body.
-         *
-         * This is only a placeholder.
-         * Later we will replace it with
-         * the actual character model.
-         */
         playerModel =
             builder.createBox(
                 1.2f,
@@ -218,19 +230,14 @@ public class Level1World implements Disposable {
         models.add(playerModel);
 
         playerInstance =
-            new ModelInstance(playerModel);
+            new ModelInstance(
+                playerModel
+            );
 
-        /*
-         * Position the player.
-         */
         updatePlayerModel();
 
         instances.add(playerInstance);
     }
-
-    // =========================================================
-    // PLAYER MODEL UPDATE
-    // =========================================================
 
     private void updatePlayerModel() {
 
@@ -239,40 +246,30 @@ public class Level1World implements Disposable {
             return;
         }
 
-        /*
-         * Player Y position represents the
-         * center of the body.
-         */
-        playerInstance.transform.setToTranslation(
-            player.getX(),
-            player.getY(),
-            player.getZ()
-        );
+        playerInstance.transform
+            .setToTranslation(
+                player.getX(),
+                player.getY(),
+                player.getZ()
+            );
     }
 
-    // =========================================================
+    // =====================================================
     // CAMERA FOLLOW
-    // =========================================================
+    // =====================================================
 
     private void updateCamera() {
 
-        if (camera == null ||
-            player == null) {
+        if (player == null) {
             return;
         }
 
-        /*
-         * Camera follows behind the player.
-         */
         camera.position.set(
-            player.getX() + cameraOffset.x,
-            player.getY() + cameraOffset.y,
-            player.getZ() + cameraOffset.z
+            player.getX() + CAMERA_X,
+            player.getY() + CAMERA_Y,
+            player.getZ() + CAMERA_Z
         );
 
-        /*
-         * Look slightly above player's center.
-         */
         camera.lookAt(
             player.getX(),
             player.getY() + 0.8f,
@@ -282,9 +279,9 @@ public class Level1World implements Disposable {
         camera.update();
     }
 
-    // =========================================================
+    // =====================================================
     // WORLD
-    // =========================================================
+    // =====================================================
 
     private void createWorld() {
 
@@ -295,20 +292,35 @@ public class Level1World implements Disposable {
             VertexAttributes.Usage.Position |
             VertexAttributes.Usage.Normal;
 
-        createGround(builder, attributes);
+        createGround(
+            builder,
+            attributes
+        );
 
-        createMainBuilding(builder, attributes);
+        createMainBuilding(
+            builder,
+            attributes
+        );
 
-        createClassrooms(builder, attributes);
+        createClassrooms(
+            builder,
+            attributes
+        );
 
-        createCourtyard(builder, attributes);
+        createCourtyard(
+            builder,
+            attributes
+        );
 
-        createGate(builder, attributes);
+        createGate(
+            builder,
+            attributes
+        );
     }
 
-    // =========================================================
+    // =====================================================
     // GROUND
-    // =========================================================
+    // =====================================================
 
     private void createGround(
         ModelBuilder builder,
@@ -333,7 +345,9 @@ public class Level1World implements Disposable {
         models.add(groundModel);
 
         ModelInstance ground =
-            new ModelInstance(groundModel);
+            new ModelInstance(
+                groundModel
+            );
 
         ground.transform.setToTranslation(
             0f,
@@ -344,9 +358,9 @@ public class Level1World implements Disposable {
         instances.add(ground);
     }
 
-    // =========================================================
+    // =====================================================
     // MAIN BUILDING
-    // =========================================================
+    // =====================================================
 
     private void createMainBuilding(
         ModelBuilder builder,
@@ -371,7 +385,9 @@ public class Level1World implements Disposable {
         models.add(buildingModel);
 
         ModelInstance building =
-            new ModelInstance(buildingModel);
+            new ModelInstance(
+                buildingModel
+            );
 
         building.transform.setToTranslation(
             0f,
@@ -382,9 +398,9 @@ public class Level1World implements Disposable {
         instances.add(building);
     }
 
-    // =========================================================
+    // =====================================================
     // CLASSROOMS
-    // =========================================================
+    // =====================================================
 
     private void createClassrooms(
         ModelBuilder builder,
@@ -408,38 +424,38 @@ public class Level1World implements Disposable {
 
         models.add(classroomModel);
 
-        /*
-         * Left classroom.
-         */
         ModelInstance leftClassroom =
-            new ModelInstance(classroomModel);
+            new ModelInstance(
+                classroomModel
+            );
 
-        leftClassroom.transform.setToTranslation(
-            -17f,
-            2.5f,
-            -3f
-        );
+        leftClassroom.transform
+            .setToTranslation(
+                -17f,
+                2.5f,
+                -3f
+            );
 
         instances.add(leftClassroom);
 
-        /*
-         * Right classroom.
-         */
         ModelInstance rightClassroom =
-            new ModelInstance(classroomModel);
+            new ModelInstance(
+                classroomModel
+            );
 
-        rightClassroom.transform.setToTranslation(
-            17f,
-            2.5f,
-            -3f
-        );
+        rightClassroom.transform
+            .setToTranslation(
+                17f,
+                2.5f,
+                -3f
+            );
 
         instances.add(rightClassroom);
     }
 
-    // =========================================================
+    // =====================================================
     // COURTYARD
-    // =========================================================
+    // =====================================================
 
     private void createCourtyard(
         ModelBuilder builder,
@@ -464,7 +480,9 @@ public class Level1World implements Disposable {
         models.add(courtyardModel);
 
         ModelInstance courtyard =
-            new ModelInstance(courtyardModel);
+            new ModelInstance(
+                courtyardModel
+            );
 
         courtyard.transform.setToTranslation(
             0f,
@@ -475,9 +493,9 @@ public class Level1World implements Disposable {
         instances.add(courtyard);
     }
 
-    // =========================================================
+    // =====================================================
     // GATE
-    // =========================================================
+    // =====================================================
 
     private void createGate(
         ModelBuilder builder,
@@ -501,11 +519,10 @@ public class Level1World implements Disposable {
 
         models.add(pillarModel);
 
-        /*
-         * Left gate pillar.
-         */
         ModelInstance leftPillar =
-            new ModelInstance(pillarModel);
+            new ModelInstance(
+                pillarModel
+            );
 
         leftPillar.transform.setToTranslation(
             -12f,
@@ -515,11 +532,10 @@ public class Level1World implements Disposable {
 
         instances.add(leftPillar);
 
-        /*
-         * Right gate pillar.
-         */
         ModelInstance rightPillar =
-            new ModelInstance(pillarModel);
+            new ModelInstance(
+                pillarModel
+            );
 
         rightPillar.transform.setToTranslation(
             12f,
@@ -530,33 +546,217 @@ public class Level1World implements Disposable {
         instances.add(rightPillar);
     }
 
-    // =========================================================
+    // =====================================================
+    // COLLISION
+    // =====================================================
+
+    private void createCollisions() {
+
+        /*
+         * Main building.
+         *
+         * Visual:
+         * width  = 18
+         * depth  = 8
+         * center = (0,-10)
+         */
+        player.addCollision(
+            -9f,
+            -14f,
+            18f,
+            8f
+        );
+
+        /*
+         * Left classroom.
+         *
+         * width  = 12
+         * depth  = 7
+         * center = (-17,-3)
+         */
+        player.addCollision(
+            -23f,
+            -6.5f,
+            12f,
+            7f
+        );
+
+        /*
+         * Right classroom.
+         */
+        player.addCollision(
+            11f,
+            -6.5f,
+            12f,
+            7f
+        );
+
+        /*
+         * Left gate pillar.
+         */
+        player.addCollision(
+            -13f,
+            14f,
+            2f,
+            2f
+        );
+
+        /*
+         * Right gate pillar.
+         */
+        player.addCollision(
+            11f,
+            14f,
+            2f,
+            2f
+        );
+    }
+
+    // =====================================================
+    // MISSION
+    // =====================================================
+
+    private void updateMission() {
+
+        if (player == null ||
+            levelComplete) {
+            return;
+        }
+
+        float x = player.getX();
+        float z = player.getZ();
+
+        /*
+         * OBJECTIVE 1
+         *
+         * Visit courtyard.
+         */
+        if (!courtyardVisited) {
+
+            if (distance(
+                x,
+                z,
+                0f,
+                5f
+            ) < 6f) {
+
+                courtyardVisited = true;
+                objectivesCompleted++;
+
+                System.out.println(
+                    "Objective 1 complete: Courtyard visited."
+                );
+            }
+        }
+
+        /*
+         * OBJECTIVE 2
+         *
+         * Visit left classroom.
+         */
+        if (!classroomVisited) {
+
+            if (distance(
+                x,
+                z,
+                -17f,
+                -3f
+            ) < 6f) {
+
+                classroomVisited = true;
+                objectivesCompleted++;
+
+                System.out.println(
+                    "Objective 2 complete: Classroom visited."
+                );
+            }
+        }
+
+        /*
+         * OBJECTIVE 3
+         *
+         * Reach main building.
+         */
+        if (!mainBuildingVisited) {
+
+            if (distance(
+                x,
+                z,
+                0f,
+                -5f
+            ) < 4f) {
+
+                mainBuildingVisited = true;
+                objectivesCompleted++;
+
+                System.out.println(
+                    "Objective 3 complete: Main building reached."
+                );
+            }
+        }
+
+        /*
+         * All objectives completed.
+         */
+        if (objectivesCompleted >=
+            TOTAL_OBJECTIVES) {
+
+            levelComplete = true;
+
+            System.out.println(
+                "================================"
+            );
+
+            System.out.println(
+                "LEVEL 1 COMPLETE"
+            );
+
+            System.out.println(
+                "================================"
+            );
+        }
+    }
+
+    private float distance(
+        float x1,
+        float z1,
+        float x2,
+        float z2
+    ) {
+
+        float dx = x1 - x2;
+        float dz = z1 - z2;
+
+        return (float) Math.sqrt(
+            dx * dx +
+            dz * dz
+        );
+    }
+
+    // =====================================================
     // UPDATE
-    // =========================================================
+    // =====================================================
 
     public void update(float delta) {
 
         /*
-         * Update player movement.
+         * Do not move after completion.
          */
-        if (player != null) {
+        if (!levelComplete) {
+
             player.update(delta);
         }
 
-        /*
-         * Synchronize visible player model.
-         */
         updatePlayerModel();
 
-        /*
-         * Follow player.
-         */
         updateCamera();
+
+        updateMission();
     }
 
-    // =========================================================
+    // =====================================================
     // RENDER
-    // =========================================================
+    // =====================================================
 
     public void render() {
 
@@ -577,16 +777,10 @@ public class Level1World implements Disposable {
             height
         );
 
-        /*
-         * Enable depth testing.
-         */
         Gdx.gl.glEnable(
             GL20.GL_DEPTH_TEST
         );
 
-        /*
-         * Background / sky color.
-         */
         Gdx.gl.glClearColor(
             0.08f,
             0.12f,
@@ -600,7 +794,7 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Render 3D world.
+         * 3D world.
          */
         modelBatch.begin(camera);
 
@@ -610,11 +804,162 @@ public class Level1World implements Disposable {
         );
 
         modelBatch.end();
+
+        /*
+         * 2D HUD.
+         */
+        renderHUD();
     }
 
-    // =========================================================
+    // =====================================================
+    // HUD
+    // =====================================================
+
+    private void renderHUD() {
+
+        uiBatch.begin();
+
+        font.getData().setScale(1.5f);
+
+        font.draw(
+            uiBatch,
+            "LEVEL 1",
+            30f,
+            Gdx.graphics.getHeight() - 30f
+        );
+
+        font.getData().setScale(1.1f);
+
+        font.draw(
+            uiBatch,
+            "Objective",
+            30f,
+            Gdx.graphics.getHeight() - 65f
+        );
+
+        font.draw(
+            uiBatch,
+            objectivesCompleted +
+            "/" +
+            TOTAL_OBJECTIVES +
+            " locations discovered",
+            30f,
+            Gdx.graphics.getHeight() - 95f
+        );
+
+        font.getData().setScale(1f);
+
+        if (!courtyardVisited) {
+
+            font.draw(
+                uiBatch,
+                "1. Explore the courtyard",
+                30f,
+                Gdx.graphics.getHeight() - 130f
+            );
+
+        } else {
+
+            font.draw(
+                uiBatch,
+                "1. Courtyard ✓",
+                30f,
+                Gdx.graphics.getHeight() - 130f
+            );
+        }
+
+        if (!classroomVisited) {
+
+            font.draw(
+                uiBatch,
+                "2. Visit the classroom",
+                30f,
+                Gdx.graphics.getHeight() - 155f
+            );
+
+        } else {
+
+            font.draw(
+                uiBatch,
+                "2. Classroom ✓",
+                30f,
+                Gdx.graphics.getHeight() - 155f
+            );
+        }
+
+        if (!mainBuildingVisited) {
+
+            font.draw(
+                uiBatch,
+                "3. Reach the main building",
+                30f,
+                Gdx.graphics.getHeight() - 180f
+            );
+
+        } else {
+
+            font.draw(
+                uiBatch,
+                "3. Main building ✓",
+                30f,
+                Gdx.graphics.getHeight() - 180f
+            );
+        }
+
+        /*
+         * Controls.
+         */
+        font.draw(
+            uiBatch,
+            "W A S D  Move",
+            30f,
+            45f
+        );
+
+        font.draw(
+            uiBatch,
+            "ESC  Pause",
+            30f,
+            22f
+        );
+
+        /*
+         * Completion screen.
+         */
+        if (levelComplete) {
+
+            font.getData().setScale(3f);
+
+            font.draw(
+                uiBatch,
+                "LEVEL 1 COMPLETE!",
+                Gdx.graphics.getWidth() / 2f - 190f,
+                Gdx.graphics.getHeight() / 2f + 50f
+            );
+
+            font.getData().setScale(1.3f);
+
+            font.draw(
+                uiBatch,
+                "All locations discovered.",
+                Gdx.graphics.getWidth() / 2f - 110f,
+                Gdx.graphics.getHeight() / 2f
+            );
+
+            font.draw(
+                uiBatch,
+                "Press ENTER to continue",
+                Gdx.graphics.getWidth() / 2f - 120f,
+                Gdx.graphics.getHeight() / 2f - 50f
+            );
+        }
+
+        uiBatch.end();
+    }
+
+    // =====================================================
     // GETTERS
-    // =========================================================
+    // =====================================================
 
     public PerspectiveCamera getCamera() {
         return camera;
@@ -624,16 +969,26 @@ public class Level1World implements Disposable {
         return player;
     }
 
-    // =========================================================
+    public boolean isLevelComplete() {
+        return levelComplete;
+    }
+
+    public int getObjectivesCompleted() {
+        return objectivesCompleted;
+    }
+
+    // =====================================================
     // DISPOSE
-    // =========================================================
+    // =====================================================
 
     @Override
     public void dispose() {
 
-        if (modelBatch != null) {
-            modelBatch.dispose();
-        }
+        modelBatch.dispose();
+
+        uiBatch.dispose();
+
+        font.dispose();
 
         for (Model model : models) {
 
@@ -643,10 +998,13 @@ public class Level1World implements Disposable {
         }
 
         models.clear();
+
         instances.clear();
 
         player = null;
+
         playerInstance = null;
+
         playerModel = null;
     }
 }

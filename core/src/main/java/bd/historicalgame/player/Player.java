@@ -9,8 +9,8 @@ import com.badlogic.gdx.utils.Array;
 /**
  * 3D player controller for Level 1.
  *
- * The player moves on the X/Z plane.
- * Y represents the player's vertical position.
+ * Player moves on the X/Z plane.
+ * Y represents vertical position.
  */
 public class Player {
 
@@ -18,17 +18,15 @@ public class Player {
 
     private final float speed;
 
-    // Player collision radius.
     private static final float COLLISION_RADIUS = 0.6f;
 
-    // Level 1 playable area.
+    // Level 1 playable boundaries.
     private static final float MIN_X = -28f;
     private static final float MAX_X = 28f;
 
     private static final float MIN_Z = -18f;
     private static final float MAX_Z = 18f;
 
-    // Collision objects.
     private final Array<Rectangle> collisionObjects;
 
     public Player(
@@ -38,28 +36,21 @@ public class Player {
         float speed
     ) {
 
-        this.position =
-            new Vector3(
-                startX,
-                startY,
-                startZ
-            );
+        position = new Vector3(
+            startX,
+            startY,
+            startZ
+        );
 
         this.speed = speed;
 
-        this.collisionObjects =
-            new Array<>();
+        collisionObjects = new Array<>();
 
         clampToWorld();
     }
 
     /**
      * Adds a rectangular collision area.
-     *
-     * x      = world X
-     * z      = world Z
-     * width  = X size
-     * depth  = Z size
      */
     public void addCollision(
         float x,
@@ -79,14 +70,15 @@ public class Player {
     }
 
     /**
-     * Removes all collision objects.
+     * Removes all collision areas.
      */
     public void clearCollisions() {
+
         collisionObjects.clear();
     }
 
     /**
-     * Updates player movement.
+     * Update player movement.
      *
      * W = forward
      * S = backward
@@ -114,7 +106,9 @@ public class Player {
             moveX += 1f;
         }
 
-        // Prevent faster diagonal movement.
+        /*
+         * Normalize diagonal movement.
+         */
         if (moveX != 0f && moveZ != 0f) {
 
             float length =
@@ -134,10 +128,9 @@ public class Player {
             moveZ * speed * delta;
 
         /*
-         * Move X and Z separately.
+         * Move separately on X and Z.
          *
-         * This allows the player to slide
-         * along the side of a building.
+         * This allows sliding around buildings.
          */
         tryMoveX(deltaX);
         tryMoveZ(deltaZ);
@@ -145,9 +138,6 @@ public class Player {
         clampToWorld();
     }
 
-    /**
-     * Attempts horizontal X movement.
-     */
     private void tryMoveX(float amount) {
 
         if (amount == 0f) {
@@ -157,18 +147,11 @@ public class Player {
         float newX =
             position.x + amount;
 
-        if (!collides(
-            newX,
-            position.z
-        )) {
-
+        if (!collides(newX, position.z)) {
             position.x = newX;
         }
     }
 
-    /**
-     * Attempts horizontal Z movement.
-     */
     private void tryMoveZ(float amount) {
 
         if (amount == 0f) {
@@ -178,18 +161,13 @@ public class Player {
         float newZ =
             position.z + amount;
 
-        if (!collides(
-            position.x,
-            newZ
-        )) {
-
+        if (!collides(position.x, newZ)) {
             position.z = newZ;
         }
     }
 
     /**
-     * Checks whether the player would collide
-     * with any Level 1 collision object.
+     * Collision test.
      */
     private boolean collides(
         float x,
@@ -216,7 +194,7 @@ public class Player {
     }
 
     /**
-     * Keeps the player inside Level 1.
+     * Keep player inside Level 1.
      */
     private void clampToWorld() {
 
