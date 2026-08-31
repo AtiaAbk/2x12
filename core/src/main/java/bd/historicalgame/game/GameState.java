@@ -1,14 +1,23 @@
 package bd.historicalgame.game;
 
 /**
- * Represents the current state of 2x12.
+ * Represents the high-level state of 2x12.
  */
 public enum GameState {
 
     MAIN_MENU,
+
+    LEVEL1_INTRO,
+
     PLAYING,
+
     PAUSED,
+
     DIALOGUE,
+
     CINEMATIC,
-    GAME_OVER
+
+    GAME_OVER,
+
+    LEVEL_COMPLETE
 }
