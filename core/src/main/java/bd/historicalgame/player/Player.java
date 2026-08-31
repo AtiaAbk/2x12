@@ -1,5 +1,6 @@
 package bd.historicalgame.player;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector3;
 
@@ -15,9 +16,30 @@ public class Player {
 
     private final float speed;
 
-    public Player(float startX, float startY, float startZ, float speed) {
-        this.position = new Vector3(startX, startY, startZ);
+    // Level 1 playable area.
+    private static final float MIN_X = -28f;
+    private static final float MAX_X = 28f;
+
+    private static final float MIN_Z = -18f;
+    private static final float MAX_Z = 18f;
+
+    public Player(
+        float startX,
+        float startY,
+        float startZ,
+        float speed
+    ) {
+
+        this.position =
+            new Vector3(
+                startX,
+                startY,
+                startZ
+            );
+
         this.speed = speed;
+
+        clampToWorld();
     }
 
     /**
@@ -33,24 +55,25 @@ public class Player {
         float moveX = 0f;
         float moveZ = 0f;
 
-        if (com.badlogic.gdx.Gdx.input.isKeyPressed(Input.Keys.W)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
             moveZ -= 1f;
         }
 
-        if (com.badlogic.gdx.Gdx.input.isKeyPressed(Input.Keys.S)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
             moveZ += 1f;
         }
 
-        if (com.badlogic.gdx.Gdx.input.isKeyPressed(Input.Keys.A)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
             moveX -= 1f;
         }
 
-        if (com.badlogic.gdx.Gdx.input.isKeyPressed(Input.Keys.D)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
             moveX += 1f;
         }
 
         // Prevent faster diagonal movement.
         if (moveX != 0f && moveZ != 0f) {
+
             float length =
                 (float) Math.sqrt(
                     moveX * moveX +
@@ -61,8 +84,37 @@ public class Player {
             moveZ /= length;
         }
 
-        position.x += moveX * speed * delta;
-        position.z += moveZ * speed * delta;
+        // Apply movement.
+        position.x +=
+            moveX * speed * delta;
+
+        position.z +=
+            moveZ * speed * delta;
+
+        // Keep player inside Level 1.
+        clampToWorld();
+    }
+
+    /**
+     * Keeps the player inside the playable Level 1 area.
+     */
+    private void clampToWorld() {
+
+        if (position.x < MIN_X) {
+            position.x = MIN_X;
+        }
+
+        if (position.x > MAX_X) {
+            position.x = MAX_X;
+        }
+
+        if (position.z < MIN_Z) {
+            position.z = MIN_Z;
+        }
+
+        if (position.z > MAX_Z) {
+            position.z = MAX_Z;
+        }
     }
 
     public Vector3 getPosition() {
