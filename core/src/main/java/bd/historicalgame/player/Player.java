@@ -1,69 +1,83 @@
 package bd.historicalgame.player;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.math.Vector3;
 
 /**
- * Main player entity for 2x12.
+ * 3D player controller for Level 1.
+ *
+ * The player moves on the X/Z plane.
+ * Y represents the player's vertical position.
  */
 public class Player {
 
-    private float x;
-    private float y;
+    private final Vector3 position;
 
-    private final float speed = 250f;
-    private final float size = 40f;
+    private final float speed;
 
-    public Player(float startX, float startY) {
-        this.x = startX;
-        this.y = startY;
+    public Player(float startX, float startY, float startZ, float speed) {
+        this.position = new Vector3(startX, startY, startZ);
+        this.speed = speed;
     }
 
+    /**
+     * Updates player movement.
+     *
+     * W = forward
+     * S = backward
+     * A = left
+     * D = right
+     */
     public void update(float delta) {
 
-        float dx = 0;
-        float dy = 0;
+        float moveX = 0f;
+        float moveZ = 0f;
 
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-            dy += 1;
+        if (com.badlogic.gdx.Gdx.input.isKeyPressed(Input.Keys.W)) {
+            moveZ -= 1f;
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-            dy -= 1;
+        if (com.badlogic.gdx.Gdx.input.isKeyPressed(Input.Keys.S)) {
+            moveZ += 1f;
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            dx -= 1;
+        if (com.badlogic.gdx.Gdx.input.isKeyPressed(Input.Keys.A)) {
+            moveX -= 1f;
         }
 
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            dx += 1;
+        if (com.badlogic.gdx.Gdx.input.isKeyPressed(Input.Keys.D)) {
+            moveX += 1f;
         }
 
-        // Prevent diagonal movement from being faster.
-        if (dx != 0 && dy != 0) {
-            float length = (float) Math.sqrt(dx * dx + dy * dy);
-            dx /= length;
-            dy /= length;
+        // Prevent faster diagonal movement.
+        if (moveX != 0f && moveZ != 0f) {
+            float length =
+                (float) Math.sqrt(
+                    moveX * moveX +
+                    moveZ * moveZ
+                );
+
+            moveX /= length;
+            moveZ /= length;
         }
 
-        x += dx * speed * delta;
-        y += dy * speed * delta;
+        position.x += moveX * speed * delta;
+        position.z += moveZ * speed * delta;
+    }
 
-        // Keep player inside the screen.
-        x = Math.max(0, Math.min(x, 1280 - size));
-        y = Math.max(0, Math.min(y, 720 - size));
+    public Vector3 getPosition() {
+        return position;
     }
 
     public float getX() {
-        return x;
+        return position.x;
     }
 
     public float getY() {
-        return y;
+        return position.y;
     }
 
-    public float getSize() {
-        return size;
+    public float getZ() {
+        return position.z;
     }
 }
