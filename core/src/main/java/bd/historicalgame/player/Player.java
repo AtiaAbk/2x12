@@ -2,7 +2,9 @@ package bd.historicalgame.player;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.Array;
 
 /**
  * 3D player controller for Level 1.
@@ -16,12 +18,18 @@ public class Player {
 
     private final float speed;
 
+    // Player collision radius.
+    private static final float COLLISION_RADIUS = 0.6f;
+
     // Level 1 playable area.
     private static final float MIN_X = -28f;
     private static final float MAX_X = 28f;
 
     private static final float MIN_Z = -18f;
     private static final float MAX_Z = 18f;
+
+    // Collision objects.
+    private final Array<Rectangle> collisionObjects;
 
     public Player(
         float startX,
@@ -39,7 +47,42 @@ public class Player {
 
         this.speed = speed;
 
+        this.collisionObjects =
+            new Array<>();
+
         clampToWorld();
+    }
+
+    /**
+     * Adds a rectangular collision area.
+     *
+     * x      = world X
+     * z      = world Z
+     * width  = X size
+     * depth  = Z size
+     */
+    public void addCollision(
+        float x,
+        float z,
+        float width,
+        float depth
+    ) {
+
+        collisionObjects.add(
+            new Rectangle(
+                x,
+                z,
+                width,
+                depth
+            )
+        );
+    }
+
+    /**
+     * Removes all collision objects.
+     */
+    public void clearCollisions() {
+        collisionObjects.clear();
     }
 
     /**
@@ -84,19 +127,96 @@ public class Player {
             moveZ /= length;
         }
 
-        // Apply movement.
-        position.x +=
+        float deltaX =
             moveX * speed * delta;
 
-        position.z +=
+        float deltaZ =
             moveZ * speed * delta;
 
-        // Keep player inside Level 1.
+        /*
+         * Move X and Z separately.
+         *
+         * This allows the player to slide
+         * along the side of a building.
+         */
+        tryMoveX(deltaX);
+        tryMoveZ(deltaZ);
+
         clampToWorld();
     }
 
     /**
-     * Keeps the player inside the playable Level 1 area.
+     * Attempts horizontal X movement.
+     */
+    private void tryMoveX(float amount) {
+
+        if (amount == 0f) {
+            return;
+        }
+
+        float newX =
+            position.x + amount;
+
+        if (!collides(
+            newX,
+            position.z
+        )) {
+
+            position.x = newX;
+        }
+    }
+
+    /**
+     * Attempts horizontal Z movement.
+     */
+    private void tryMoveZ(float amount) {
+
+        if (amount == 0f) {
+            return;
+        }
+
+        float newZ =
+            position.z + amount;
+
+        if (!collides(
+            position.x,
+            newZ
+        )) {
+
+            position.z = newZ;
+        }
+    }
+
+    /**
+     * Checks whether the player would collide
+     * with any Level 1 collision object.
+     */
+    private boolean collides(
+        float x,
+        float z
+    ) {
+
+        Rectangle playerBounds =
+            new Rectangle(
+                x - COLLISION_RADIUS,
+                z - COLLISION_RADIUS,
+                COLLISION_RADIUS * 2f,
+                COLLISION_RADIUS * 2f
+            );
+
+        for (Rectangle obstacle :
+             collisionObjects) {
+
+            if (playerBounds.overlaps(obstacle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Keeps the player inside Level 1.
      */
     private void clampToWorld() {
 
