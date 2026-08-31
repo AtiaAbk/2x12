@@ -670,6 +670,7 @@ public class Level1World implements Disposable {
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
                                 "8E8068"
+                                
                             )
                         )
                     }
