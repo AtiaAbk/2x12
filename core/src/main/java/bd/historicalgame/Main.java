@@ -3,26 +3,26 @@ package bd.historicalgame;
 import bd.historicalgame.game.GameConfig;
 import bd.historicalgame.game.GameManager;
 import bd.historicalgame.game.GameState;
-import bd.historicalgame.player.Player;
+import bd.historicalgame.world.World;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
 
+/**
+ * Main entry point of 2x12.
+ */
 public class Main extends ApplicationAdapter {
 
     private SpriteBatch batch;
     private BitmapFont font;
-    private ShapeRenderer shapeRenderer;
 
     private GameManager gameManager;
-    private Player player;
+    private World world;
 
     private int selectedOption = 0;
 
@@ -37,45 +37,63 @@ public class Main extends ApplicationAdapter {
 
         batch = new SpriteBatch();
         font = new BitmapFont();
-        shapeRenderer = new ShapeRenderer();
 
         gameManager = new GameManager();
 
-        player = new Player(
-            GameConfig.WIDTH / 2f - 20,
-            GameConfig.HEIGHT / 2f - 20
+        world = null;
+
+        System.out.println("================================");
+        System.out.println("              2x12");
+        System.out.println("      HISTORICAL ADVENTURE");
+        System.out.println("================================");
+        System.out.println(
+            "State: " +
+            gameManager.getCurrentState()
         );
-
-        gameManager.setState(GameState.MAIN_MENU);
-
-        System.out.println("================================");
-        System.out.println("          2x12");
-        System.out.println("    HISTORICAL ADVENTURE");
-        System.out.println("================================");
-        System.out.println("State: " + gameManager.getCurrentState());
     }
 
     @Override
     public void render() {
 
-        float delta = Gdx.graphics.getDeltaTime();
+        float delta =
+            Gdx.graphics.getDeltaTime();
 
         handleInput();
 
-        GameState state = gameManager.getCurrentState();
+        GameState state =
+            gameManager.getCurrentState();
 
-        if (state == GameState.MAIN_MENU) {
-            renderMainMenu();
-        }
+        switch (state) {
 
-        else if (state == GameState.PLAYING) {
-            updateGame(delta);
-            renderGame();
-        }
+            case MAIN_MENU:
+                renderMainMenu();
+                break;
 
-        else if (state == GameState.PAUSED) {
-            renderGame();
-            renderPauseScreen();
+            case LEVEL1_INTRO:
+                renderLevel1Intro();
+                break;
+
+            case PLAYING:
+
+                if (world != null) {
+                    world.update(delta);
+                    world.render();
+                }
+
+                break;
+
+            case PAUSED:
+
+                if (world != null) {
+                    world.render();
+                }
+
+                renderPause();
+                break;
+
+            default:
+                renderMainMenu();
+                break;
         }
     }
 
@@ -85,89 +103,130 @@ public class Main extends ApplicationAdapter {
 
     private void handleInput() {
 
-        GameState state = gameManager.getCurrentState();
+        GameState state =
+            gameManager.getCurrentState();
 
-        // -------------------------
+        // -----------------------------------------------------
         // MAIN MENU
-        // -------------------------
+        // -----------------------------------------------------
 
         if (state == GameState.MAIN_MENU) {
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.UP
+            )) {
 
                 selectedOption--;
 
                 if (selectedOption < 0) {
-                    selectedOption = menuOptions.length - 1;
+                    selectedOption =
+                        menuOptions.length - 1;
                 }
             }
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.DOWN
+            )) {
 
                 selectedOption++;
 
-                if (selectedOption >= menuOptions.length) {
+                if (selectedOption >=
+                    menuOptions.length) {
+
                     selectedOption = 0;
                 }
             }
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.ENTER
+            )) {
 
-                switch (selectedOption) {
+                if (selectedOption == 0) {
 
-                    case 0:
-                        gameManager.setState(GameState.PLAYING);
-                        System.out.println("Starting 2x12...");
-                        break;
+                    startLevel1();
+                }
 
-                    case 1:
-                        System.out.println("Settings selected.");
-                        break;
+                else if (selectedOption == 1) {
 
-                    case 2:
-                        System.out.println("Exit selected.");
-                        Gdx.app.exit();
-                        break;
+                    System.out.println(
+                        "Settings selected."
+                    );
+                }
+
+                else if (selectedOption == 2) {
+
+                    Gdx.app.exit();
                 }
             }
         }
 
-        // -------------------------
-        // PLAYING
-        // -------------------------
+        // -----------------------------------------------------
+        // LEVEL 1 INTRO
+        // -----------------------------------------------------
 
-        else if (state == GameState.PLAYING) {
+        else if (state ==
+                 GameState.LEVEL1_INTRO) {
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.ENTER
+            )) {
 
-                gameManager.setState(GameState.PAUSED);
+                gameManager.startPlaying();
 
-                System.out.println("Game paused.");
+                System.out.println(
+                    "LEVEL 1 STARTED"
+                );
             }
         }
 
-        // -------------------------
+        // -----------------------------------------------------
+        // PLAYING
+        // -----------------------------------------------------
+
+        else if (state ==
+                 GameState.PLAYING) {
+
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.ESCAPE
+            )) {
+
+                gameManager.pauseGame();
+            }
+        }
+
+        // -----------------------------------------------------
         // PAUSED
-        // -------------------------
+        // -----------------------------------------------------
 
-        else if (state == GameState.PAUSED) {
+        else if (state ==
+                 GameState.PAUSED) {
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.ESCAPE
+            )) {
 
-                gameManager.setState(GameState.PLAYING);
-
-                System.out.println("Game resumed.");
+                gameManager.resumeGame();
             }
         }
     }
 
     // =========================================================
-    // GAME UPDATE
+    // START LEVEL 1
     // =========================================================
 
-    private void updateGame(float delta) {
+    private void startLevel1() {
 
-        player.update(delta);
+        System.out.println(
+            "Loading Level 1..."
+        );
+
+        if (world != null) {
+            world.dispose();
+        }
+
+        world = new World();
+
+        gameManager.startLevel1();
     }
 
     // =========================================================
@@ -185,8 +244,7 @@ public class Main extends ApplicationAdapter {
 
         batch.begin();
 
-        // Title
-        font.getData().setScale(3.5f);
+        font.getData().setScale(4f);
 
         font.draw(
             batch,
@@ -195,148 +253,121 @@ public class Main extends ApplicationAdapter {
             GameConfig.HEIGHT - 100
         );
 
-        // Subtitle
-        font.getData().setScale(1.2f);
+        font.getData().setScale(1.3f);
 
         font.draw(
             batch,
             "HISTORICAL ADVENTURE",
             105,
-            GameConfig.HEIGHT - 145
+            GameConfig.HEIGHT - 150
         );
 
-        // Menu
-        font.getData().setScale(1.5f);
+        font.getData().setScale(1.6f);
 
-        float startY = GameConfig.HEIGHT - 280;
+        float startY =
+            GameConfig.HEIGHT - 280;
 
-        for (int i = 0; i < menuOptions.length; i++) {
+        for (int i = 0;
+             i < menuOptions.length;
+             i++) {
 
             String prefix =
-                (i == selectedOption)
-                    ? "> "
-                    : "  ";
+                i == selectedOption
+                ? "> "
+                : "  ";
 
             font.draw(
                 batch,
                 prefix + menuOptions[i],
                 120,
-                startY - (i * 70)
+                startY - i * 70
             );
         }
 
-        // State
         font.getData().setScale(1f);
 
         font.draw(
             batch,
-            "STATE: " + gameManager.getCurrentState(),
+            "UP / DOWN  Select",
             100,
-            80
+            70
         );
 
         font.draw(
             batch,
-            "UP / DOWN  Select     ENTER  Confirm",
+            "ENTER  Confirm",
             100,
-            45
+            40
         );
 
         batch.end();
     }
 
     // =========================================================
-    // GAME WORLD
+    // LEVEL 1 INTRO
     // =========================================================
 
-    private void renderGame() {
+    private void renderLevel1Intro() {
 
         ScreenUtils.clear(
-            0.08f,
-            0.12f,
-            0.08f,
+            0.04f,
+            0.05f,
+            0.06f,
             1f
         );
 
-        // World grid
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-
-        shapeRenderer.setColor(
-            0.15f,
-            0.25f,
-            0.15f,
-            1f
-        );
-
-        for (int x = 0; x <= GameConfig.WIDTH; x += 80) {
-
-            shapeRenderer.line(
-                x,
-                0,
-                x,
-                GameConfig.HEIGHT
-            );
-        }
-
-        for (int y = 0; y <= GameConfig.HEIGHT; y += 80) {
-
-            shapeRenderer.line(
-                0,
-                y,
-                GameConfig.WIDTH,
-                y
-            );
-        }
-
-        shapeRenderer.end();
-
-        // Player
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-        shapeRenderer.setColor(Color.WHITE);
-
-        shapeRenderer.rect(
-            player.getX(),
-            player.getY(),
-            player.getSize(),
-            player.getSize()
-        );
-
-        shapeRenderer.end();
-
-        // HUD
         batch.begin();
+
+        font.getData().setScale(3f);
+
+        font.draw(
+            batch,
+            "LEVEL 1",
+            100,
+            GameConfig.HEIGHT - 100
+        );
+
+        font.getData().setScale(2f);
+
+        font.draw(
+            batch,
+            "WHERE IT ALL BEGAN",
+            100,
+            GameConfig.HEIGHT - 170
+        );
 
         font.getData().setScale(1.3f);
 
         font.draw(
             batch,
-            "2x12",
-            30,
-            GameConfig.HEIGHT - 30
+            "Mid-June 2024",
+            100,
+            GameConfig.HEIGHT - 260
+        );
+
+        font.getData().setScale(1.1f);
+
+        font.draw(
+            batch,
+            "A normal day is about to change.",
+            100,
+            GameConfig.HEIGHT - 320
+        );
+
+        font.draw(
+            batch,
+            "Explore the campus and discover what is happening.",
+            100,
+            GameConfig.HEIGHT - 355
         );
 
         font.getData().setScale(1f);
 
         font.draw(
             batch,
-            "W A S D  -  MOVE",
-            30,
-            35
-        );
-
-        font.draw(
-            batch,
-            "ESC  -  PAUSE",
-            GameConfig.WIDTH - 150,
-            35
-        );
-
-        font.draw(
-            batch,
-            "STATE: PLAYING",
-            GameConfig.WIDTH - 170,
-            GameConfig.HEIGHT - 30
+            "Press ENTER to begin",
+            100,
+            100
         );
 
         batch.end();
@@ -346,26 +377,9 @@ public class Main extends ApplicationAdapter {
     // PAUSE
     // =========================================================
 
-    private void renderPauseScreen() {
+    private void renderPause() {
 
-        // Dark overlay
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-        shapeRenderer.setColor(
-            0f,
-            0f,
-            0f,
-            0.65f
-        );
-
-        shapeRenderer.rect(
-            0,
-            0,
-            GameConfig.WIDTH,
-            GameConfig.HEIGHT
-        );
-
-        shapeRenderer.end();
+        Gdx.gl.glEnable(GL20.GL_BLEND);
 
         batch.begin();
 
@@ -383,18 +397,23 @@ public class Main extends ApplicationAdapter {
         font.draw(
             batch,
             "Press ESC to resume",
-            GameConfig.WIDTH / 2f - 95,
+            GameConfig.WIDTH / 2f - 100,
             GameConfig.HEIGHT / 2f - 30
         );
 
         batch.end();
+
+        Gdx.gl.glDisable(GL20.GL_BLEND);
     }
 
     @Override
     public void dispose() {
 
+        if (world != null) {
+            world.dispose();
+        }
+
         batch.dispose();
         font.dispose();
-        shapeRenderer.dispose();
     }
 }
