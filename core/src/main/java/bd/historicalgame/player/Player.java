@@ -11,23 +11,91 @@ import com.badlogic.gdx.utils.Array;
  *
  * Player moves on the X/Z plane.
  * Y represents vertical position.
+ *
+ * Features:
+ * - WASD movement
+ * - Smooth acceleration
+ * - Smooth deceleration
+ * - Normalized diagonal movement
+ * - Collision detection
+ * - World boundaries
+ * - Movement direction
+ * - Movement state
  */
 public class Player {
 
+    // =========================================================
+    // POSITION
+    // =========================================================
+
     private final Vector3 position;
+
+    // =========================================================
+    // MOVEMENT
+    // =========================================================
 
     private final float speed;
 
+    /*
+     * Current movement velocity.
+     *
+     * Keeping velocity separate from position makes movement
+     * feel smoother than instantly changing position.
+     */
+    private float velocityX = 0f;
+    private float velocityZ = 0f;
+
+    /*
+     * Movement acceleration/deceleration.
+     */
+    private static final float ACCELERATION = 18f;
+    private static final float DECELERATION = 22f;
+
+    /*
+     * Small threshold used to stop tiny residual movement.
+     */
+    private static final float VELOCITY_EPSILON = 0.01f;
+
+    // =========================================================
+    // COLLISION
+    // =========================================================
+
     private static final float COLLISION_RADIUS = 0.6f;
 
-    // Level 1 playable boundaries.
+    private final Array<Rectangle> collisionObjects;
+
+    // =========================================================
+    // WORLD BOUNDARIES
+    // =========================================================
+
     private static final float MIN_X = -28f;
     private static final float MAX_X = 28f;
 
     private static final float MIN_Z = -18f;
     private static final float MAX_Z = 18f;
 
-    private final Array<Rectangle> collisionObjects;
+    // =========================================================
+    // MOVEMENT STATE
+    // =========================================================
+
+    private boolean moving = false;
+
+    /*
+     * Last meaningful movement direction.
+     *
+     * Default direction points toward negative Z,
+     * which matches the initial Level 1 movement direction.
+     */
+    private final Vector3 movementDirection =
+        new Vector3(
+            0f,
+            0f,
+            -1f
+        );
+
+    // =========================================================
+    // CONSTRUCTOR
+    // =========================================================
 
     public Player(
         float startX,
@@ -36,18 +104,24 @@ public class Player {
         float speed
     ) {
 
-        position = new Vector3(
-            startX,
-            startY,
-            startZ
-        );
+        position =
+            new Vector3(
+                startX,
+                startY,
+                startZ
+            );
 
         this.speed = speed;
 
-        collisionObjects = new Array<>();
+        collisionObjects =
+            new Array<>();
 
         clampToWorld();
     }
+
+    // =========================================================
+    // COLLISION MANAGEMENT
+    // =========================================================
 
     /**
      * Adds a rectangular collision area.
@@ -77,8 +151,12 @@ public class Player {
         collisionObjects.clear();
     }
 
+    // =========================================================
+    // UPDATE
+    // =========================================================
+
     /**
-     * Update player movement.
+     * Updates player movement.
      *
      * W = forward
      * S = backward
@@ -87,58 +165,228 @@ public class Player {
      */
     public void update(float delta) {
 
-        float moveX = 0f;
-        float moveZ = 0f;
-
-        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
-            moveZ -= 1f;
-        }
-
-        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
-            moveZ += 1f;
-        }
-
-        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
-            moveX -= 1f;
-        }
-
-        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
-            moveX += 1f;
-        }
-
         /*
-         * Normalize diagonal movement.
+         * Prevent very large frame jumps.
          */
-        if (moveX != 0f && moveZ != 0f) {
+        if (delta > 0.1f) {
+            delta = 0.1f;
+        }
+
+        // -----------------------------------------------------
+        // INPUT
+        // -----------------------------------------------------
+
+        float inputX = 0f;
+        float inputZ = 0f;
+
+        if (
+            Gdx.input.isKeyPressed(
+                Input.Keys.W
+            )
+        ) {
+
+            inputZ -= 1f;
+        }
+
+        if (
+            Gdx.input.isKeyPressed(
+                Input.Keys.S
+            )
+        ) {
+
+            inputZ += 1f;
+        }
+
+        if (
+            Gdx.input.isKeyPressed(
+                Input.Keys.A
+            )
+        ) {
+
+            inputX -= 1f;
+        }
+
+        if (
+            Gdx.input.isKeyPressed(
+                Input.Keys.D
+            )
+        ) {
+
+            inputX += 1f;
+        }
+
+        // -----------------------------------------------------
+        // NORMALIZE DIAGONAL INPUT
+        // -----------------------------------------------------
+
+        if (
+            inputX != 0f &&
+            inputZ != 0f
+        ) {
 
             float length =
                 (float) Math.sqrt(
-                    moveX * moveX +
-                    moveZ * moveZ
+                    inputX * inputX +
+                    inputZ * inputZ
                 );
 
-            moveX /= length;
-            moveZ /= length;
+            inputX /= length;
+            inputZ /= length;
         }
 
+        // -----------------------------------------------------
+        // MOVEMENT STATE
+        // -----------------------------------------------------
+
+        moving =
+            inputX != 0f ||
+            inputZ != 0f;
+
+        // -----------------------------------------------------
+        // MOVEMENT DIRECTION
+        // -----------------------------------------------------
+
+        if (moving) {
+
+            movementDirection.set(
+                inputX,
+                0f,
+                inputZ
+            ).nor();
+        }
+
+        // -----------------------------------------------------
+        // TARGET VELOCITY
+        // -----------------------------------------------------
+
+        float targetVelocityX =
+            inputX * speed;
+
+        float targetVelocityZ =
+            inputZ * speed;
+
+        // -----------------------------------------------------
+        // SMOOTH ACCELERATION
+        // -----------------------------------------------------
+
+        if (moving) {
+
+            velocityX =
+                moveTowards(
+                    velocityX,
+                    targetVelocityX,
+                    ACCELERATION * delta
+                );
+
+            velocityZ =
+                moveTowards(
+                    velocityZ,
+                    targetVelocityZ,
+                    ACCELERATION * delta
+                );
+
+        } else {
+
+            // -------------------------------------------------
+            // SMOOTH DECELERATION
+            // -------------------------------------------------
+
+            velocityX =
+                moveTowards(
+                    velocityX,
+                    0f,
+                    DECELERATION * delta
+                );
+
+            velocityZ =
+                moveTowards(
+                    velocityZ,
+                    0f,
+                    DECELERATION * delta
+                );
+        }
+
+        // -----------------------------------------------------
+        // FRAME MOVEMENT
+        // -----------------------------------------------------
+
         float deltaX =
-            moveX * speed * delta;
+            velocityX * delta;
 
         float deltaZ =
-            moveZ * speed * delta;
+            velocityZ * delta;
 
-        /*
-         * Move separately on X and Z.
-         *
-         * This allows sliding around buildings.
-         */
+        // -----------------------------------------------------
+        // COLLISION-AWARE MOVEMENT
+        // -----------------------------------------------------
+
         tryMoveX(deltaX);
+
         tryMoveZ(deltaZ);
 
+        // -----------------------------------------------------
+        // WORLD BOUNDARY
+        // -----------------------------------------------------
+
         clampToWorld();
+
+        // -----------------------------------------------------
+        // CLEAN UP VERY SMALL VELOCITIES
+        // -----------------------------------------------------
+
+        if (
+            Math.abs(velocityX) <
+            VELOCITY_EPSILON
+        ) {
+
+            velocityX = 0f;
+        }
+
+        if (
+            Math.abs(velocityZ) <
+            VELOCITY_EPSILON
+        ) {
+
+            velocityZ = 0f;
+        }
     }
 
-    private void tryMoveX(float amount) {
+    // =========================================================
+    // SMOOTH VALUE MOVEMENT
+    // =========================================================
+
+    private float moveTowards(
+        float current,
+        float target,
+        float maxDelta
+    ) {
+
+        if (
+            Math.abs(
+                target - current
+            ) <= maxDelta
+        ) {
+
+            return target;
+        }
+
+        if (current < target) {
+
+            return current + maxDelta;
+
+        } else {
+
+            return current - maxDelta;
+        }
+    }
+
+    // =========================================================
+    // X MOVEMENT
+    // =========================================================
+
+    private void tryMoveX(
+        float amount
+    ) {
 
         if (amount == 0f) {
             return;
@@ -147,12 +395,32 @@ public class Player {
         float newX =
             position.x + amount;
 
-        if (!collides(newX, position.z)) {
+        if (
+            !collides(
+                newX,
+                position.z
+            )
+        ) {
+
             position.x = newX;
+
+        } else {
+
+            /*
+             * Stop horizontal velocity when
+             * hitting an obstacle.
+             */
+            velocityX = 0f;
         }
     }
 
-    private void tryMoveZ(float amount) {
+    // =========================================================
+    // Z MOVEMENT
+    // =========================================================
+
+    private void tryMoveZ(
+        float amount
+    ) {
 
         if (amount == 0f) {
             return;
@@ -161,13 +429,32 @@ public class Player {
         float newZ =
             position.z + amount;
 
-        if (!collides(position.x, newZ)) {
+        if (
+            !collides(
+                position.x,
+                newZ
+            )
+        ) {
+
             position.z = newZ;
+
+        } else {
+
+            /*
+             * Stop forward/backward velocity when
+             * hitting an obstacle.
+             */
+            velocityZ = 0f;
         }
     }
 
+    // =========================================================
+    // COLLISION
+    // =========================================================
+
     /**
-     * Collision test.
+     * Checks whether the player would collide
+     * with any registered collision object.
      */
     private boolean collides(
         float x,
@@ -182,10 +469,17 @@ public class Player {
                 COLLISION_RADIUS * 2f
             );
 
-        for (Rectangle obstacle :
-             collisionObjects) {
+        for (
+            Rectangle obstacle :
+            collisionObjects
+        ) {
 
-            if (playerBounds.overlaps(obstacle)) {
+            if (
+                playerBounds.overlaps(
+                    obstacle
+                )
+            ) {
+
                 return true;
             }
         }
@@ -193,41 +487,108 @@ public class Player {
         return false;
     }
 
+    // =========================================================
+    // WORLD BOUNDARY
+    // =========================================================
+
     /**
-     * Keep player inside Level 1.
+     * Keeps the player inside Level 1.
      */
     private void clampToWorld() {
 
         if (position.x < MIN_X) {
+
             position.x = MIN_X;
+            velocityX = 0f;
         }
 
         if (position.x > MAX_X) {
+
             position.x = MAX_X;
+            velocityX = 0f;
         }
 
         if (position.z < MIN_Z) {
+
             position.z = MIN_Z;
+            velocityZ = 0f;
         }
 
         if (position.z > MAX_Z) {
+
             position.z = MAX_Z;
+            velocityZ = 0f;
         }
     }
 
+    // =========================================================
+    // POSITION
+    // =========================================================
+
     public Vector3 getPosition() {
+
         return position;
     }
 
     public float getX() {
+
         return position.x;
     }
 
     public float getY() {
+
         return position.y;
     }
 
     public float getZ() {
+
         return position.z;
+    }
+
+    // =========================================================
+    // MOVEMENT INFORMATION
+    // =========================================================
+
+    /**
+     * Returns whether the player is currently moving.
+     */
+    public boolean isMoving() {
+
+        return moving;
+    }
+
+    /**
+     * Returns current X velocity.
+     */
+    public float getVelocityX() {
+
+        return velocityX;
+    }
+
+    /**
+     * Returns current Z velocity.
+     */
+    public float getVelocityZ() {
+
+        return velocityZ;
+    }
+
+    /**
+     * Returns the player's current movement direction.
+     */
+    public Vector3 getMovementDirection() {
+
+        return movementDirection;
+    }
+
+    /**
+     * Returns current movement speed.
+     */
+    public float getCurrentSpeed() {
+
+        return (float) Math.sqrt(
+            velocityX * velocityX +
+            velocityZ * velocityZ
+        );
     }
 }

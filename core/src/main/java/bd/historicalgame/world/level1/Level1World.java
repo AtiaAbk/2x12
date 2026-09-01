@@ -4,7 +4,6 @@ import bd.historicalgame.game.GameConfig;
 import bd.historicalgame.player.Player;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
@@ -26,25 +25,23 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 
 /**
- * Level 1 World
+ * LEVEL 1
  *
- * Dhaka University inspired historical campus environment.
+ * Cinematic historical campus prototype.
  *
- * Features:
- * - 3D campus
- * - Smooth third-person camera
- * - Player movement
- * - Buildings
- * - Roads
- * - Courtyard
+ * Main goals:
+ * - Smooth third person camera
+ * - Cinematic lighting
+ * - More detailed architecture
+ * - Trees and vegetation
+ * - Roads and courtyard
  * - Gate
- * - Trees
  * - Lamps
  * - Mission system
  * - Objective marker
- * - Direction indicator
  * - Distance indicator
- * - Mini-map
+ * - Direction indicator
+ * - Mini map
  * - Level completion
  */
 public class Level1World implements Disposable {
@@ -78,16 +75,9 @@ public class Level1World implements Disposable {
     private final Vector3 cameraLookAt =
         new Vector3();
 
-    /*
-     * Camera distance and height.
-     */
-    private static final float CAMERA_DISTANCE = 18f;
-    private static final float CAMERA_HEIGHT = 8f;
-
-    /*
-     * Camera smoothing.
-     */
-    private static final float CAMERA_SMOOTHNESS = 5f;
+    private static final float CAMERA_DISTANCE = 14f;
+    private static final float CAMERA_HEIGHT = 6.5f;
+    private static final float CAMERA_SMOOTHNESS = 7f;
 
     // =========================================================
     // PLAYER
@@ -109,36 +99,24 @@ public class Level1World implements Disposable {
 
     private boolean levelCompleted = false;
 
-    private float missionCompleteTimer = 0f;
+    private float worldTime = 0f;
 
     private static final float OBJECTIVE_DISTANCE = 3.5f;
 
     private final Vector3[] missionTargets = {
 
-        /*
-         * Mission 1:
-         * Entrance/front of Main Building.
-         */
         new Vector3(
             0f,
             1f,
             -4.5f
         ),
 
-        /*
-         * Mission 2:
-         * Central courtyard.
-         */
         new Vector3(
             0f,
             1f,
             5f
         ),
 
-        /*
-         * Mission 3:
-         * Central investigation point.
-         */
         new Vector3(
             0f,
             1f,
@@ -170,23 +148,17 @@ public class Level1World implements Disposable {
 
     public Level1World() {
 
-        modelBatch =
-            new ModelBatch();
+        modelBatch = new ModelBatch();
 
-        environment =
-            new Environment();
+        environment = new Environment();
 
-        instances =
-            new Array<>();
+        instances = new Array<>();
 
-        models =
-            new Array<>();
+        models = new Array<>();
 
-        spriteBatch =
-            new SpriteBatch();
+        spriteBatch = new SpriteBatch();
 
-        font =
-            new BitmapFont();
+        font = new BitmapFont();
 
         createLighting();
 
@@ -206,28 +178,42 @@ public class Level1World implements Disposable {
     private void createLighting() {
 
         /*
-         * Soft ambient daylight.
+         * Warm natural ambient light.
          */
         environment.set(
             ColorAttribute.createAmbient(
-                0.72f,
-                0.70f,
-                0.64f,
+                0.55f,
+                0.58f,
+                0.62f,
                 1f
             )
         );
 
         /*
-         * Warm sunlight.
+         * Main sunlight.
          */
         environment.add(
             new DirectionalLight().set(
                 1.0f,
-                0.92f,
-                0.78f,
-                -0.7f,
+                0.88f,
+                0.68f,
+                -0.65f,
                 -1.0f,
-                -0.4f
+                -0.35f
+            )
+        );
+
+        /*
+         * Secondary soft fill light.
+         */
+        environment.add(
+            new DirectionalLight().set(
+                0.30f,
+                0.38f,
+                0.50f,
+                0.5f,
+                -0.4f,
+                0.7f
             )
         );
     }
@@ -238,11 +224,9 @@ public class Level1World implements Disposable {
 
     private void createCamera() {
 
-        float width =
-            Gdx.graphics.getWidth();
+        float width = Gdx.graphics.getWidth();
 
-        float height =
-            Gdx.graphics.getHeight();
+        float height = Gdx.graphics.getHeight();
 
         if (width <= 0) {
             width = GameConfig.WIDTH;
@@ -252,27 +236,26 @@ public class Level1World implements Disposable {
             height = GameConfig.HEIGHT;
         }
 
-        camera =
-            new PerspectiveCamera(
-                67f,
-                width,
-                height
-            );
-
-        camera.position.set(
-            0f,
-            CAMERA_HEIGHT,
-            28f
+        camera = new PerspectiveCamera(
+            65f,
+            width,
+            height
         );
 
         camera.near = 0.1f;
 
         camera.far = 500f;
 
+        camera.position.set(
+            0f,
+            CAMERA_HEIGHT,
+            26f
+        );
+
         camera.lookAt(
             0f,
-            1.5f,
-            0f
+            1.4f,
+            8f
         );
 
         camera.update();
@@ -284,16 +267,15 @@ public class Level1World implements Disposable {
 
     private void createPlayer() {
 
-        player =
-            new Player(
-                0f,
-                1f,
-                12f,
-                GameConfig.PLAYER_SPEED
-            );
+        player = new Player(
+            0f,
+            1f,
+            12f,
+            GameConfig.PLAYER_SPEED
+        );
 
         /*
-         * Building collision areas.
+         * Main building collision.
          */
         player.addCollision(
             -9f,
@@ -302,6 +284,9 @@ public class Level1World implements Disposable {
             8f
         );
 
+        /*
+         * Left classroom.
+         */
         player.addCollision(
             -23f,
             -6.5f,
@@ -309,6 +294,9 @@ public class Level1World implements Disposable {
             7f
         );
 
+        /*
+         * Right classroom.
+         */
         player.addCollision(
             11f,
             -6.5f,
@@ -341,18 +329,23 @@ public class Level1World implements Disposable {
             VertexAttributes.Usage.Normal;
 
         /*
-         * Temporary character.
+         * Temporary human-like stylized character.
+         *
+         * This is still procedural.
+         * Later we can replace it with a real
+         * animated GLB/FBX character.
          */
         playerModel =
-            builder.createBox(
-                1.2f,
-                2f,
-                1.2f,
+            builder.createCylinder(
+                0.55f,
+                2.0f,
+                0.55f,
+                16,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "B96F45"
+                                "6F3827"
                             )
                         )
                     }
@@ -377,7 +370,7 @@ public class Level1World implements Disposable {
     }
 
     // =========================================================
-    // PLAYER MODEL
+    // PLAYER MODEL UPDATE
     // =========================================================
 
     private void updatePlayerModel() {
@@ -398,7 +391,7 @@ public class Level1World implements Disposable {
     }
 
     // =========================================================
-    // OBJECTIVE MARKER
+    // OBJECTIVE
     // =========================================================
 
     private void createObjectiveMarker() {
@@ -412,15 +405,15 @@ public class Level1World implements Disposable {
 
         objectiveMarkerModel =
             builder.createCylinder(
-                1.0f,
-                3.5f,
-                1.0f,
-                20,
+                0.65f,
+                2.8f,
+                0.65f,
+                24,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "E7B84B"
+                                "D6A63A"
                             )
                         )
                     }
@@ -445,7 +438,7 @@ public class Level1World implements Disposable {
     }
 
     // =========================================================
-    // OBJECTIVE MARKER UPDATE
+    // OBJECTIVE UPDATE
     // =========================================================
 
     private void updateObjectiveMarker() {
@@ -462,26 +455,22 @@ public class Level1World implements Disposable {
                 missionIndex
             ];
 
-        /*
-         * Floating marker above objective.
-         */
-        float floatingY =
-            3.5f +
+        float y =
+            2.8f +
             MathUtils.sin(
-                missionCompleteTimer * 2f
-            ) * 0.3f;
+                worldTime * 2.4f
+            ) * 0.35f;
 
-        objectiveMarkerInstance
-            .transform
+        objectiveMarkerInstance.transform
             .setToTranslation(
                 target.x,
-                floatingY,
+                y,
                 target.z
             );
     }
 
     // =========================================================
-    // WORLD CREATION
+    // WORLD
     // =========================================================
 
     private void createWorld() {
@@ -537,6 +526,11 @@ public class Level1World implements Disposable {
             builder,
             attributes
         );
+
+        createCourtyardDetails(
+            builder,
+            attributes
+        );
     }
 
     // =========================================================
@@ -550,14 +544,14 @@ public class Level1World implements Disposable {
 
         Model groundModel =
             builder.createBox(
-                70f,
-                0.4f,
-                50f,
+                75f,
+                0.35f,
+                55f,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "31522A"
+                                "263C2A"
                             )
                         )
                     }
@@ -569,19 +563,11 @@ public class Level1World implements Disposable {
             groundModel
         );
 
-        ModelInstance ground =
-            new ModelInstance(
-                groundModel
-            );
-
-        ground.transform.setToTranslation(
+        addInstance(
+            groundModel,
             0f,
-            -0.2f,
+            -0.18f,
             0f
-        );
-
-        instances.add(
-            ground
         );
     }
 
@@ -596,14 +582,14 @@ public class Level1World implements Disposable {
 
         Model roadModel =
             builder.createBox(
-                20f,
-                0.18f,
-                35f,
+                19f,
+                0.12f,
+                38f,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "75664C"
+                                "51493E"
                             )
                         )
                     }
@@ -615,35 +601,23 @@ public class Level1World implements Disposable {
             roadModel
         );
 
-        ModelInstance centralRoad =
-            new ModelInstance(
-                roadModel
-            );
-
-        centralRoad.transform
-            .setToTranslation(
-                0f,
-                0.1f,
-                0f
-            );
-
-        instances.add(
-            centralRoad
+        addInstance(
+            roadModel,
+            0f,
+            0.05f,
+            0f
         );
 
-        /*
-         * Cross road.
-         */
         Model crossRoadModel =
             builder.createBox(
-                55f,
-                0.16f,
+                58f,
+                0.10f,
                 7f,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "665844"
+                                "48443D"
                             )
                         )
                     }
@@ -655,20 +629,49 @@ public class Level1World implements Disposable {
             crossRoadModel
         );
 
-        ModelInstance crossRoad =
-            new ModelInstance(
-                crossRoadModel
+        addInstance(
+            crossRoadModel,
+            0f,
+            0.04f,
+            7f
+        );
+
+        /*
+         * Road edge strips.
+         */
+        Model edgeModel =
+            builder.createBox(
+                0.35f,
+                0.08f,
+                38f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "88775B"
+                            )
+                        )
+                    }
+                ),
+                attributes
             );
 
-        crossRoad.transform
-            .setToTranslation(
-                0f,
-                0.09f,
-                7f
-            );
+        models.add(
+            edgeModel
+        );
 
-        instances.add(
-            crossRoad
+        addInstance(
+            edgeModel,
+            -9.7f,
+            0.12f,
+            0f
+        );
+
+        addInstance(
+            edgeModel,
+            9.7f,
+            0.12f,
+            0f
         );
     }
 
@@ -681,6 +684,9 @@ public class Level1World implements Disposable {
         long attributes
     ) {
 
+        /*
+         * Main body.
+         */
         Model buildingModel =
             builder.createBox(
                 18f,
@@ -690,7 +696,7 @@ public class Level1World implements Disposable {
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "C9B58D"
+                                "B9A77F"
                             )
                         )
                     }
@@ -702,20 +708,42 @@ public class Level1World implements Disposable {
             buildingModel
         );
 
-        ModelInstance building =
-            new ModelInstance(
-                buildingModel
+        addInstance(
+            buildingModel,
+            0f,
+            3.5f,
+            -10f
+        );
+
+        /*
+         * Dark roof.
+         */
+        Model roofModel =
+            builder.createBox(
+                19f,
+                0.8f,
+                9f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "44372D"
+                            )
+                        )
+                    }
+                ),
+                attributes
             );
 
-        building.transform
-            .setToTranslation(
-                0f,
-                3.5f,
-                -10f
-            );
+        models.add(
+            roofModel
+        );
 
-        instances.add(
-            building
+        addInstance(
+            roofModel,
+            0f,
+            7.35f,
+            -10f
         );
 
         /*
@@ -723,14 +751,14 @@ public class Level1World implements Disposable {
          */
         Model entranceModel =
             builder.createBox(
-                10f,
+                11f,
                 0.4f,
-                3f,
+                3.5f,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "9A8060"
+                                "806A50"
                             )
                         )
                     }
@@ -742,20 +770,11 @@ public class Level1World implements Disposable {
             entranceModel
         );
 
-        ModelInstance entrance =
-            new ModelInstance(
-                entranceModel
-            );
-
-        entrance.transform
-            .setToTranslation(
-                0f,
-                0.2f,
-                -5.2f
-            );
-
-        instances.add(
-            entrance
+        addInstance(
+            entranceModel,
+            0f,
+            0.2f,
+            -5.3f
         );
 
         /*
@@ -763,14 +782,14 @@ public class Level1World implements Disposable {
          */
         Model pillarModel =
             builder.createBox(
-                1.1f,
-                6f,
-                1.1f,
+                1.0f,
+                6.2f,
+                1.0f,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "D7C49A"
+                                "D1BF99"
                             )
                         )
                     }
@@ -784,23 +803,106 @@ public class Level1World implements Disposable {
 
         addInstance(
             pillarModel,
-            0f,
-            3f,
-            -5.8f
-        );
-
-        addInstance(
-            pillarModel,
             -7f,
-            3f,
+            3.1f,
             -5.8f
         );
 
         addInstance(
             pillarModel,
             7f,
-            3f,
+            3.1f,
             -5.8f
+        );
+
+        addInstance(
+            pillarModel,
+            0f,
+            3.1f,
+            -5.8f
+        );
+
+        /*
+         * Entrance top beam.
+         */
+        Model beamModel =
+            builder.createBox(
+                15f,
+                0.8f,
+                1.1f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "8C704F"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            beamModel
+        );
+
+        addInstance(
+            beamModel,
+            0f,
+            6.1f,
+            -5.8f
+        );
+
+        /*
+         * Windows.
+         */
+        Model windowModel =
+            builder.createBox(
+                1.8f,
+                2.2f,
+                0.18f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "263744"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            windowModel
+        );
+
+        addInstance(
+            windowModel,
+            -6f,
+            4.1f,
+            -5.82f
+        );
+
+        addInstance(
+            windowModel,
+            -3f,
+            4.1f,
+            -5.82f
+        );
+
+        addInstance(
+            windowModel,
+            3f,
+            4.1f,
+            -5.82f
+        );
+
+        addInstance(
+            windowModel,
+            6f,
+            4.1f,
+            -5.82f
         );
     }
 
@@ -822,7 +924,7 @@ public class Level1World implements Disposable {
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "A99570"
+                                "967F60"
                             )
                         )
                     }
@@ -834,40 +936,60 @@ public class Level1World implements Disposable {
             classroomModel
         );
 
-        ModelInstance left =
-            new ModelInstance(
-                classroomModel
-            );
-
-        left.transform
-            .setToTranslation(
-                -17f,
-                2.5f,
-                -3f
-            );
-
-        instances.add(
-            left
+        addInstance(
+            classroomModel,
+            -17f,
+            2.5f,
+            -3f
         );
 
-        ModelInstance right =
-            new ModelInstance(
-                classroomModel
-            );
-
-        right.transform
-            .setToTranslation(
-                17f,
-                2.5f,
-                -3f
-            );
-
-        instances.add(
-            right
+        addInstance(
+            classroomModel,
+            17f,
+            2.5f,
+            -3f
         );
 
         /*
-         * Back academic buildings.
+         * Roofs.
+         */
+        Model roofModel =
+            builder.createBox(
+                13f,
+                0.7f,
+                7.8f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "45382D"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            roofModel
+        );
+
+        addInstance(
+            roofModel,
+            -17f,
+            5.35f,
+            -3f
+        );
+
+        addInstance(
+            roofModel,
+            17f,
+            5.35f,
+            -3f
+        );
+
+        /*
+         * Back buildings.
          */
         Model backModel =
             builder.createBox(
@@ -878,7 +1000,7 @@ public class Level1World implements Disposable {
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "B5A27D"
+                                "A18C6A"
                             )
                         )
                     }
@@ -917,13 +1039,13 @@ public class Level1World implements Disposable {
         Model courtyardModel =
             builder.createBox(
                 18f,
-                0.35f,
+                0.30f,
                 14f,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "88775B"
+                                "74664F"
                             )
                         )
                     }
@@ -935,20 +1057,150 @@ public class Level1World implements Disposable {
             courtyardModel
         );
 
-        ModelInstance courtyard =
-            new ModelInstance(
-                courtyardModel
-            );
+        addInstance(
+            courtyardModel,
+            0f,
+            0.18f,
+            5f
+        );
 
-        courtyard.transform
-            .setToTranslation(
-                0f,
+        /*
+         * Central stone circle.
+         */
+        Model circleModel =
+            builder.createCylinder(
+                4.2f,
                 0.18f,
-                5f
+                4.2f,
+                32,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "95866C"
+                            )
+                        )
+                    }
+                ),
+                attributes
             );
 
-        instances.add(
-            courtyard
+        models.add(
+            circleModel
+        );
+
+        addInstance(
+            circleModel,
+            0f,
+            0.42f,
+            5f
+        );
+    }
+
+    // =========================================================
+    // COURTYARD DETAILS
+    // =========================================================
+
+    private void createCourtyardDetails(
+        ModelBuilder builder,
+        long attributes
+    ) {
+
+        /*
+         * Central monument base.
+         */
+        Model baseModel =
+            builder.createCylinder(
+                1.6f,
+                0.8f,
+                1.6f,
+                24,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "6D604E"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            baseModel
+        );
+
+        addInstance(
+            baseModel,
+            0f,
+            0.8f,
+            5f
+        );
+
+        /*
+         * Monument column.
+         */
+        Model columnModel =
+            builder.createCylinder(
+                0.65f,
+                3.2f,
+                0.65f,
+                20,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "B4A487"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            columnModel
+        );
+
+        addInstance(
+            columnModel,
+            0f,
+            2.4f,
+            5f
+        );
+
+        /*
+         * Top ornament.
+         */
+        Model topModel =
+            builder.createSphere(
+                1.1f,
+                1.1f,
+                1.1f,
+                16,
+                12,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "B9964A"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            topModel
+        );
+
+        addInstance(
+            topModel,
+            0f,
+            4.3f,
+            5f
         );
     }
 
@@ -970,7 +1222,7 @@ public class Level1World implements Disposable {
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "C7B188"
+                                "B29A70"
                             )
                         )
                     }
@@ -997,18 +1249,18 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Gate top beam.
+         * Gate beam.
          */
-        Model gateTopModel =
+        Model beamModel =
             builder.createBox(
                 26f,
-                1.2f,
+                1.3f,
                 1.5f,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "9C805B"
+                                "72583D"
                             )
                         )
                     }
@@ -1017,13 +1269,44 @@ public class Level1World implements Disposable {
             );
 
         models.add(
-            gateTopModel
+            beamModel
         );
 
         addInstance(
-            gateTopModel,
+            beamModel,
             0f,
             7.2f,
+            15f
+        );
+
+        /*
+         * Gate top decoration.
+         */
+        Model topModel =
+            builder.createBox(
+                18f,
+                0.7f,
+                1.8f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "4E3C2C"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            topModel
+        );
+
+        addInstance(
+            topModel,
+            0f,
+            8.2f,
             15f
         );
     }
@@ -1039,15 +1322,15 @@ public class Level1World implements Disposable {
 
         Model trunkModel =
             builder.createCylinder(
-                0.55f,
-                3.5f,
-                0.55f,
-                10,
+                0.48f,
+                3.2f,
+                0.48f,
+                12,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "63442D"
+                                "4E3525"
                             )
                         )
                     }
@@ -1057,16 +1340,16 @@ public class Level1World implements Disposable {
 
         Model leavesModel =
             builder.createSphere(
+                3.5f,
                 3.8f,
-                3.8f,
-                3.8f,
+                3.5f,
+                16,
                 12,
-                8,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "3F7139"
+                                "315E35"
                             )
                         )
                     }
@@ -1083,7 +1366,7 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Left side.
+         * Perimeter trees.
          */
         addTree(
             trunkModel,
@@ -1109,9 +1392,6 @@ public class Level1World implements Disposable {
             12f
         );
 
-        /*
-         * Right side.
-         */
         addTree(
             trunkModel,
             leavesModel,
@@ -1142,7 +1422,7 @@ public class Level1World implements Disposable {
         addTree(
             trunkModel,
             leavesModel,
-            -9f,
+            -8f,
             0f,
             5f
         );
@@ -1150,7 +1430,7 @@ public class Level1World implements Disposable {
         addTree(
             trunkModel,
             leavesModel,
-            9f,
+            8f,
             0f,
             5f
         );
@@ -1158,7 +1438,7 @@ public class Level1World implements Disposable {
         addTree(
             trunkModel,
             leavesModel,
-            -9f,
+            -8f,
             0f,
             10f
         );
@@ -1166,9 +1446,28 @@ public class Level1World implements Disposable {
         addTree(
             trunkModel,
             leavesModel,
-            9f,
+            8f,
             0f,
             10f
+        );
+
+        /*
+         * Additional trees.
+         */
+        addTree(
+            trunkModel,
+            leavesModel,
+            -22f,
+            0f,
+            8f
+        );
+
+        addTree(
+            trunkModel,
+            leavesModel,
+            22f,
+            0f,
+            8f
         );
     }
 
@@ -1192,7 +1491,7 @@ public class Level1World implements Disposable {
         trunk.transform
             .setToTranslation(
                 x,
-                y + 1.75f,
+                y + 1.6f,
                 z
             );
 
@@ -1208,7 +1507,7 @@ public class Level1World implements Disposable {
         leaves.transform
             .setToTranslation(
                 x,
-                y + 4.1f,
+                y + 4.0f,
                 z
             );
 
@@ -1228,15 +1527,15 @@ public class Level1World implements Disposable {
 
         Model poleModel =
             builder.createCylinder(
-                0.18f,
-                4f,
-                0.18f,
-                8,
+                0.16f,
+                3.8f,
+                0.16f,
+                10,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "393633"
+                                "292725"
                             )
                         )
                     }
@@ -1246,16 +1545,16 @@ public class Level1World implements Disposable {
 
         Model lightModel =
             builder.createSphere(
-                0.7f,
-                0.7f,
-                0.7f,
-                8,
-                8,
+                0.55f,
+                0.55f,
+                0.55f,
+                12,
+                10,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "F2D58A"
+                                "E8C66C"
                             )
                         )
                     }
@@ -1333,7 +1632,7 @@ public class Level1World implements Disposable {
         pole.transform
             .setToTranslation(
                 x,
-                2f,
+                1.9f,
                 z
             );
 
@@ -1349,7 +1648,7 @@ public class Level1World implements Disposable {
         light.transform
             .setToTranslation(
                 x,
-                4.2f,
+                4.0f,
                 z
             );
 
@@ -1376,7 +1675,7 @@ public class Level1World implements Disposable {
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "77664E"
+                                "655744"
                             )
                         )
                     }
@@ -1388,9 +1687,6 @@ public class Level1World implements Disposable {
             wallModel
         );
 
-        /*
-         * Back wall.
-         */
         addInstance(
             wallModel,
             0f,
@@ -1398,9 +1694,6 @@ public class Level1World implements Disposable {
             -24f
         );
 
-        /*
-         * Front wall.
-         */
         addInstance(
             wallModel,
             0f,
@@ -1447,11 +1740,8 @@ public class Level1World implements Disposable {
             delta = 0.1f;
         }
 
-        missionCompleteTimer += delta;
+        worldTime += delta;
 
-        /*
-         * Update player.
-         */
         if (
             player != null &&
             !levelCompleted
@@ -1483,9 +1773,7 @@ public class Level1World implements Disposable {
         }
 
         /*
-         * Third-person camera behind player.
-         *
-         * Current player movement uses world Z.
+         * Camera follows from behind.
          */
         desiredCameraPosition.set(
             player.getX(),
@@ -1494,13 +1782,12 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Smooth camera movement.
+         * Smooth exponential interpolation.
          */
         float smoothing =
             1f -
             (float) Math.exp(
-                -CAMERA_SMOOTHNESS *
-                Gdx.graphics.getDeltaTime()
+                -CAMERA_SMOOTHNESS * Gdx.graphics.getDeltaTime()
             );
 
         camera.position.lerp(
@@ -1508,9 +1795,12 @@ public class Level1World implements Disposable {
             smoothing
         );
 
+        /*
+         * Slightly above player's head.
+         */
         cameraLookAt.set(
             player.getX(),
-            player.getY() + 1.0f,
+            player.getY() + 1.15f,
             player.getZ()
         );
 
@@ -1571,7 +1861,11 @@ public class Level1World implements Disposable {
             } else {
 
                 System.out.println(
-                    "Mission completed. Next: " +
+                    "MISSION COMPLETE"
+                );
+
+                System.out.println(
+                    "NEXT: " +
                     missionTitles[missionIndex]
                 );
             }
@@ -1595,7 +1889,7 @@ public class Level1World implements Disposable {
         }
 
         if (height <= 0) {
-            height = 1;
+            height = GameConfig.HEIGHT;
         }
 
         Gdx.gl.glViewport(
@@ -1605,20 +1899,17 @@ public class Level1World implements Disposable {
             height
         );
 
-        /*
-         * Depth testing.
-         */
         Gdx.gl.glEnable(
             GL20.GL_DEPTH_TEST
         );
 
         /*
-         * Atmospheric dark blue sky.
+         * Cinematic warm sky.
          */
         Gdx.gl.glClearColor(
-            0.07f,
-            0.11f,
-            0.15f,
+            0.12f,
+            0.17f,
+            0.21f,
             1f
         );
 
@@ -1628,7 +1919,7 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Render 3D world.
+         * 3D world.
          */
         modelBatch.begin(
             camera
@@ -1642,7 +1933,7 @@ public class Level1World implements Disposable {
         modelBatch.end();
 
         /*
-         * Render HUD.
+         * HUD.
          */
         renderHUD();
     }
@@ -1663,9 +1954,9 @@ public class Level1World implements Disposable {
 
             renderMissionHUD();
 
-            renderMiniMap();
-
             renderDirectionIndicator();
+
+            renderMiniMap();
         }
 
         spriteBatch.end();
@@ -1678,12 +1969,12 @@ public class Level1World implements Disposable {
     private void renderMissionHUD() {
 
         font.getData().setScale(
-            1.25f
+            1.35f
         );
 
         font.draw(
             spriteBatch,
-            "LEVEL 1",
+            "LEVEL 01",
             30f,
             Gdx.graphics.getHeight() - 35f
         );
@@ -1694,14 +1985,24 @@ public class Level1World implements Disposable {
 
         font.draw(
             spriteBatch,
-            "OBJECTIVE: " +
-            missionTitles[missionIndex],
+            "OBJECTIVE",
             30f,
             Gdx.graphics.getHeight() - 70f
         );
 
         font.getData().setScale(
-            0.9f
+            0.95f
+        );
+
+        font.draw(
+            spriteBatch,
+            missionTitles[missionIndex],
+            30f,
+            Gdx.graphics.getHeight() - 100f
+        );
+
+        font.getData().setScale(
+            0.82f
         );
 
         font.draw(
@@ -1710,12 +2011,9 @@ public class Level1World implements Disposable {
                 missionIndex
             ],
             30f,
-            Gdx.graphics.getHeight() - 100f
+            Gdx.graphics.getHeight() - 128f
         );
 
-        /*
-         * Distance.
-         */
         Vector3 target =
             missionTargets[
                 missionIndex
@@ -1737,31 +2035,31 @@ public class Level1World implements Disposable {
 
         font.draw(
             spriteBatch,
-            "Distance: " +
+            "Distance  " +
             String.format(
                 "%.1f m",
                 distance
             ),
             30f,
-            Gdx.graphics.getHeight() - 130f
+            Gdx.graphics.getHeight() - 155f
         );
 
         font.getData().setScale(
-            0.8f
+            0.78f
         );
 
         font.draw(
             spriteBatch,
-            "W A S D  Move",
+            "W A S D   MOVE",
             30f,
-            65f
+            60f
         );
 
         font.draw(
             spriteBatch,
-            "ESC  Pause",
+            "ESC   PAUSE",
             30f,
-            38f
+            35f
         );
 
         font.getData().setScale(
@@ -1770,7 +2068,7 @@ public class Level1World implements Disposable {
     }
 
     // =========================================================
-    // DIRECTION INDICATOR
+    // DIRECTION
     // =========================================================
 
     private void renderDirectionIndicator() {
@@ -1796,27 +2094,27 @@ public class Level1World implements Disposable {
         ) {
 
             if (dx > 0) {
-                direction = "EAST →";
+                direction = "EAST  >";
             } else {
-                direction = "← WEST";
+                direction = "<  WEST";
             }
 
         } else {
 
             if (dz > 0) {
-                direction = "SOUTH ↓";
+                direction = "SOUTH  v";
             } else {
-                direction = "NORTH ↑";
+                direction = "NORTH  ^";
             }
         }
 
         font.getData().setScale(
-            1.15f
+            1.05f
         );
 
         float x =
             Gdx.graphics.getWidth() / 2f -
-            55f;
+            45f;
 
         font.draw(
             spriteBatch,
@@ -1836,7 +2134,7 @@ public class Level1World implements Disposable {
 
     private void renderMiniMap() {
 
-        float mapSize = 150f;
+        float mapSize = 140f;
 
         float mapX =
             Gdx.graphics.getWidth() -
@@ -1846,24 +2144,21 @@ public class Level1World implements Disposable {
         float mapY =
             Gdx.graphics.getHeight() -
             mapSize -
-            30f;
+            35f;
 
-        /*
-         * Simple border.
-         */
         font.getData().setScale(
-            0.85f
+            0.82f
         );
 
         font.draw(
             spriteBatch,
-            "MAP",
+            "CAMPUS",
             mapX,
             mapY + mapSize + 18f
         );
 
         /*
-         * Player marker.
+         * Player.
          */
         float normalizedX =
             (player.getX() + 30f) /
@@ -1879,7 +2174,8 @@ public class Level1World implements Disposable {
                 normalizedX,
                 0f,
                 1f
-            ) * mapSize;
+            ) *
+            mapSize;
 
         float py =
             mapY +
@@ -1887,7 +2183,8 @@ public class Level1World implements Disposable {
                 normalizedZ,
                 0f,
                 1f
-            ) * mapSize;
+            ) *
+            mapSize;
 
         font.draw(
             spriteBatch,
@@ -1897,34 +2194,36 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Objective marker.
+         * Objective.
          */
         Vector3 target =
             missionTargets[
                 missionIndex
             ];
 
-        float targetX =
+        float tx =
             mapX +
             MathUtils.clamp(
                 (target.x + 30f) / 60f,
                 0f,
                 1f
-            ) * mapSize;
+            ) *
+            mapSize;
 
-        float targetY =
+        float ty =
             mapY +
             MathUtils.clamp(
                 (target.z + 20f) / 40f,
                 0f,
                 1f
-            ) * mapSize;
+            ) *
+            mapSize;
 
         font.draw(
             spriteBatch,
             "★",
-            targetX,
-            targetY
+            tx,
+            ty
         );
 
         font.getData().setScale(
@@ -1945,43 +2244,47 @@ public class Level1World implements Disposable {
             Gdx.graphics.getHeight() / 2f;
 
         font.getData().setScale(
-            2.8f
+            2.7f
         );
 
         font.draw(
             spriteBatch,
             "LEVEL 1 COMPLETE",
-            centerX - 230f,
-            centerY + 50f
+            centerX - 220f,
+            centerY + 55f
         );
 
         font.getData().setScale(
-            1.3f
+            1.25f
         );
 
         font.draw(
             spriteBatch,
             "WHERE IT ALL BEGAN",
-            centerX - 135f,
+            centerX - 130f,
             centerY
         );
 
         font.getData().setScale(
-            1f
+            0.95f
         );
 
         font.draw(
             spriteBatch,
             "All objectives completed.",
-            centerX - 100f,
-            centerY - 50f
+            centerX - 95f,
+            centerY - 45f
         );
 
         font.draw(
             spriteBatch,
             "Press ESC to return.",
-            centerX - 90f,
-            centerY - 90f
+            centerX - 85f,
+            centerY - 80f
+        );
+
+        font.getData().setScale(
+            1f
         );
     }
 
@@ -1990,6 +2293,7 @@ public class Level1World implements Disposable {
     // =========================================================
 
     public PerspectiveCamera getCamera() {
+
         return camera;
     }
 
@@ -1998,14 +2302,16 @@ public class Level1World implements Disposable {
     // =========================================================
 
     public Player getPlayer() {
+
         return player;
     }
 
     // =========================================================
-    // LEVEL COMPLETE GETTER
+    // LEVEL COMPLETE
     // =========================================================
 
     public boolean isLevelCompleted() {
+
         return levelCompleted;
     }
 
