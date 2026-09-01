@@ -5,16 +5,18 @@ import bd.historicalgame.game.GameConfig;
 import bd.historicalgame.player.Player;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.VertexAttributes;
+<<<<<<< HEAD
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.g3d.Attribute;
+=======
+>>>>>>> 3d
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.Material;
 import com.badlogic.gdx.graphics.g3d.Model;
@@ -25,9 +27,8 @@ import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.Disposable;
 
+<<<<<<< HEAD
 /**
  * LEVEL 1
  *
@@ -56,21 +57,24 @@ import com.badlogic.gdx.utils.Disposable;
  * can run without external 3D assets.
  */
 public class Level1World implements Disposable {
+=======
+import java.util.ArrayList;
+import java.util.List;
+>>>>>>> 3d
 
-    // =========================================================
-    // RENDERING
-    // =========================================================
+public class Level1World {
 
     private final ModelBatch modelBatch;
     private final Environment environment;
+    private final PerspectiveCamera camera;
+    private final Player player;
 
-    private final Array<ModelInstance> instances;
-    private final Array<Model> models;
+    private final ModelBuilder modelBuilder;
 
-    // =========================================================
-    // HUD
-    // =========================================================
+    private final List<Model> models = new ArrayList<>();
+    private final List<ModelInstance> worldObjects = new ArrayList<>();
 
+<<<<<<< HEAD
     private final SpriteBatch spriteBatch;
     private final FontManager fontManager;
     private final ShapeRenderer hudShapes;
@@ -276,15 +280,21 @@ public class Level1World implements Disposable {
     // =========================================================
     // CONSTRUCTOR
     // =========================================================
+=======
+    private Model groundModel;
+    private Model roadModel;
+    private Model pathModel;
+    private Model treeTrunkModel;
+    private Model treeLeafModel;
+>>>>>>> 3d
 
     public Level1World() {
 
-        modelBatch =
-            new ModelBatch();
+        modelBatch = new ModelBatch();
 
-        environment =
-            new Environment();
+        modelBuilder = new ModelBuilder();
 
+<<<<<<< HEAD
         instances =
             new Array<>();
 
@@ -318,8 +328,15 @@ public class Level1World implements Disposable {
     // =========================================================
 
     private void createLighting() {
+=======
+        environment = new Environment();
+>>>>>>> 3d
 
+        /*
+         * Soft daylight.
+         */
         environment.set(
+<<<<<<< HEAD
             ColorAttribute.createAmbient(
                 0.58f,
                 0.58f,
@@ -369,16 +386,45 @@ public class Level1World implements Disposable {
         camera.far = 300f;
         resetCamera();
     }
+=======
+                ColorAttribute.createAmbientLight(
+                        0.55f,
+                        0.55f,
+                        0.55f,
+                        1.0f
+                )
+        );
 
-    // =========================================================
-    // PLAYER
-    // =========================================================
+        environment.add(
+                new DirectionalLight().set(
+                        0.85f,
+                        0.82f,
+                        0.72f,
+                        -0.55f,
+                        -1.0f,
+                        -0.35f
+                )
+        );
 
-    private void createPlayer() {
+        /*
+         * Camera.
+         */
+        camera = new PerspectiveCamera(
+                GameConfig.FOV,
+                Gdx.graphics.getWidth(),
+                Gdx.graphics.getHeight()
+        );
 
-        player =
-            new Player(
+        camera.near = 0.1f;
+        camera.far = 500f;
+>>>>>>> 3d
+
+        /*
+         * Player starts near the central campus area.
+         */
+        player = new Player(
                 0f,
+<<<<<<< HEAD
                 1f,
                 14f,
                 GameConfig.PLAYER_SPEED
@@ -506,12 +552,37 @@ public class Level1World implements Disposable {
                 angle
             );
         }
+=======
+                1.0f,
+                12f,
+                6.0f
+        );
+
+        /*
+         * Create world.
+         */
+        createMaterials();
+
+        createGround();
+
+        createMainRoads();
+
+        createSecondaryPaths();
+
+        createCampusOpenAreas();
+
+        createTrees();
+
+        /*
+         * Initial camera position.
+         */
+        updateCamera(0f);
+>>>>>>> 3d
     }
 
-    // =========================================================
-    // CAMERA FOLLOW
-    // =========================================================
+    private void createMaterials() {
 
+<<<<<<< HEAD
     private void updateCamera(float delta) {
 
         if (player == null) return;
@@ -644,6 +715,51 @@ public class Level1World implements Disposable {
         createTSC(
             builder,
             attributes
+=======
+        /*
+         * Ground.
+         */
+        groundMaterial = new Material(
+                ColorAttribute.createDiffuse(
+                        new Color(0.32f, 0.48f, 0.25f, 1f)
+                )
+        );
+
+        /*
+         * Road.
+         */
+        roadMaterial = new Material(
+                ColorAttribute.createDiffuse(
+                        new Color(0.20f, 0.20f, 0.18f, 1f)
+                )
+        );
+
+        /*
+         * Path.
+         */
+        pathMaterial = new Material(
+                ColorAttribute.createDiffuse(
+                        new Color(0.58f, 0.54f, 0.45f, 1f)
+                )
+        );
+
+        /*
+         * Tree trunk.
+         */
+        trunkMaterial = new Material(
+                ColorAttribute.createDiffuse(
+                        new Color(0.30f, 0.18f, 0.09f, 1f)
+                )
+        );
+
+        /*
+         * Tree leaves.
+         */
+        leafMaterial = new Material(
+                ColorAttribute.createDiffuse(
+                        new Color(0.18f, 0.42f, 0.16f, 1f)
+                )
+>>>>>>> 3d
         );
 
         createLibrary(
@@ -739,15 +855,15 @@ public class Level1World implements Disposable {
         instances.add(instance);
     }
 
-    // =========================================================
-    // GROUND
-    // =========================================================
+    private Material groundMaterial;
+    private Material roadMaterial;
+    private Material pathMaterial;
+    private Material trunkMaterial;
+    private Material leafMaterial;
 
-    private void createGround(
-        ModelBuilder builder,
-        long attributes
-    ) {
+    private void createGround() {
 
+<<<<<<< HEAD
         addBox(
             builder,
             attributes,
@@ -773,9 +889,32 @@ public class Level1World implements Disposable {
             0f,
             0.01f,
             0f
+=======
+        groundModel = modelBuilder.createBox(
+                240f,
+                0.4f,
+                220f,
+                groundMaterial,
+                VertexAttributes.Usage.Position |
+                        VertexAttributes.Usage.Normal
         );
+
+        models.add(groundModel);
+
+        ModelInstance ground =
+                new ModelInstance(groundModel);
+
+        ground.transform.setToTranslation(
+                0f,
+                -0.2f,
+                0f
+>>>>>>> 3d
+        );
+
+        worldObjects.add(ground);
     }
 
+<<<<<<< HEAD
     // =========================================================
     // CAMPUS PATHS
     // =========================================================
@@ -2071,57 +2210,427 @@ public class Level1World implements Disposable {
     // =========================================================
     // RENDER
     // =========================================================
+=======
+    private void createMainRoads() {
+
+        /*
+         * Main east-west road.
+         */
+        createRoad(
+                0f,
+                0.02f,
+                0f,
+                150f,
+                8f
+        );
+
+        /*
+         * Main north-south road.
+         */
+        createRoad(
+                0f,
+                0.03f,
+                0f,
+                8f,
+                150f
+        );
+
+        /*
+         * Secondary connecting road.
+         */
+        createRoad(
+                42f,
+                0.04f,
+                15f,
+                55f,
+                6f
+        );
+
+        /*
+         * Another connecting road.
+         */
+        createRoad(
+                -45f,
+                0.04f,
+                -18f,
+                60f,
+                6f
+        );
+    }
+
+    private void createRoad(
+            float x,
+            float y,
+            float z,
+            float width,
+            float depth
+    ) {
+
+        Model model = modelBuilder.createBox(
+                width,
+                0.12f,
+                depth,
+                roadMaterial,
+                VertexAttributes.Usage.Position |
+                        VertexAttributes.Usage.Normal
+        );
+
+        models.add(model);
+
+        ModelInstance instance =
+                new ModelInstance(model);
+
+        instance.transform.setToTranslation(
+                x,
+                y,
+                z
+        );
+
+        worldObjects.add(instance);
+    }
+
+    private void createSecondaryPaths() {
+
+        /*
+         * Path toward open campus area.
+         */
+        createPath(
+                -28f,
+                0.08f,
+                25f,
+                55f,
+                3.5f
+        );
+
+        createPath(
+                30f,
+                0.08f,
+                -28f,
+                3.5f,
+                55f
+        );
+
+        createPath(
+                -55f,
+                0.08f,
+                -42f,
+                50f,
+                3.5f
+        );
+
+        createPath(
+                55f,
+                0.08f,
+                45f,
+                55f,
+                3.5f
+        );
+    }
+
+    private void createPath(
+            float x,
+            float y,
+            float z,
+            float width,
+            float depth
+    ) {
+
+        Model model = modelBuilder.createBox(
+                width,
+                0.08f,
+                depth,
+                pathMaterial,
+                VertexAttributes.Usage.Position |
+                        VertexAttributes.Usage.Normal
+        );
+
+        models.add(model);
+
+        ModelInstance instance =
+                new ModelInstance(model);
+
+        instance.transform.setToTranslation(
+                x,
+                y,
+                z
+        );
+
+        worldObjects.add(instance);
+    }
+
+    private void createCampusOpenAreas() {
+
+        /*
+         * Central open chottor.
+         */
+        createOpenArea(
+                0f,
+                0.06f,
+                0f,
+                38f,
+                30f
+        );
+
+        /*
+         * East open area.
+         */
+        createOpenArea(
+                55f,
+                0.06f,
+                20f,
+                28f,
+                25f
+        );
+
+        /*
+         * West open area.
+         */
+        createOpenArea(
+                -58f,
+                0.06f,
+                25f,
+                30f,
+                25f
+        );
+    }
+
+    private void createOpenArea(
+            float x,
+            float y,
+            float z,
+            float width,
+            float depth
+    ) {
+
+        Model model = modelBuilder.createBox(
+                width,
+                0.05f,
+                depth,
+                new Material(
+                        ColorAttribute.createDiffuse(
+                                new Color(
+                                        0.38f,
+                                        0.52f,
+                                        0.29f,
+                                        1f
+                                )
+                        )
+                ),
+                VertexAttributes.Usage.Position |
+                        VertexAttributes.Usage.Normal
+        );
+
+        models.add(model);
+
+        ModelInstance instance =
+                new ModelInstance(model);
+
+        instance.transform.setToTranslation(
+                x,
+                y,
+                z
+        );
+
+        worldObjects.add(instance);
+    }
+
+    private void createTrees() {
+
+        /*
+         * Central campus trees.
+         */
+        addTree(-18f, 0f, -14f, 1.0f);
+        addTree(18f, 0f, -14f, 1.2f);
+        addTree(-22f, 0f, 16f, 1.1f);
+        addTree(22f, 0f, 17f, 0.9f);
+
+        /*
+         * East side.
+         */
+        addTree(46f, 0f, 8f, 1.3f);
+        addTree(58f, 0f, 38f, 1.0f);
+        addTree(70f, 0f, 12f, 1.2f);
+        addTree(45f, 0f, 45f, 0.9f);
+
+        /*
+         * West side.
+         */
+        addTree(-48f, 0f, 8f, 1.0f);
+        addTree(-68f, 0f, 30f, 1.2f);
+        addTree(-72f, 0f, -20f, 0.9f);
+        addTree(-45f, 0f, -40f, 1.3f);
+
+        /*
+         * Background vegetation.
+         */
+        addTree(-85f, 0f, 60f, 1.5f);
+        addTree(-55f, 0f, 70f, 1.2f);
+        addTree(50f, 0f, 70f, 1.4f);
+        addTree(85f, 0f, 55f, 1.6f);
+    }
+
+    private void addTree(
+            float x,
+            float y,
+            float z,
+            float scale
+    ) {
+
+        if (treeTrunkModel == null) {
+
+            treeTrunkModel = modelBuilder.createCylinder(
+                    0.45f,
+                    4.0f,
+                    0.45f,
+                    8,
+                    trunkMaterial,
+                    VertexAttributes.Usage.Position |
+                            VertexAttributes.Usage.Normal
+            );
+
+            models.add(treeTrunkModel);
+        }
+
+        if (treeLeafModel == null) {
+
+            treeLeafModel = modelBuilder.createSphere(
+                    4.5f,
+                    4.5f,
+                    4.5f,
+                    12,
+                    8,
+                    leafMaterial,
+                    VertexAttributes.Usage.Position |
+                            VertexAttributes.Usage.Normal
+            );
+
+            models.add(treeLeafModel);
+        }
+
+        ModelInstance trunk =
+                new ModelInstance(treeTrunkModel);
+
+        trunk.transform.setToTranslation(
+                x,
+                2f * scale,
+                z
+        );
+
+        trunk.transform.scale(
+                scale,
+                scale,
+                scale
+        );
+
+        worldObjects.add(trunk);
+
+        ModelInstance leaves =
+                new ModelInstance(treeLeafModel);
+
+        leaves.transform.setToTranslation(
+                x,
+                5.0f * scale,
+                z
+        );
+
+        leaves.transform.scale(
+                scale,
+                scale,
+                scale
+        );
+
+        worldObjects.add(leaves);
+    }
+
+    private void updateCamera(float delta) {
+
+        Vector3 playerPosition =
+                player.getPosition();
+
+        /*
+         * Third-person camera.
+         */
+        Vector3 desiredPosition =
+                new Vector3(
+                        playerPosition.x,
+                        playerPosition.y + 7.5f,
+                        playerPosition.z + 12f
+                );
+
+        camera.position.lerp(
+                desiredPosition,
+                Math.min(1f, delta * 6f)
+        );
+
+        camera.lookAt(
+                playerPosition.x,
+                playerPosition.y + 1.0f,
+                playerPosition.z
+        );
+
+        camera.up.set(Vector3.Y);
+
+        camera.update();
+    }
+
+    public void update(float delta) {
+
+        player.update(delta);
+
+        updateCamera(delta);
+    }
+>>>>>>> 3d
 
     public void render() {
 
-        int width =
-            Gdx.graphics.getWidth();
-
-        int height =
-            Gdx.graphics.getHeight();
-
-        if (height <= 0) {
-            height = 1;
-        }
-
         Gdx.gl.glViewport(
-            0,
-            0,
-            width,
-            height
-        );
-
-        Gdx.gl.glEnable(
-            GL20.GL_DEPTH_TEST
+                0,
+                0,
+                Gdx.graphics.getWidth(),
+                Gdx.graphics.getHeight()
         );
 
         /*
          * Cinematic dark-blue sky.
          */
         Gdx.gl.glClearColor(
+<<<<<<< HEAD
             0.055f,
             0.09f,
             0.12f,
             1f
+=======
+                0.55f,
+                0.70f,
+                0.82f,
+                1f
+>>>>>>> 3d
         );
 
         Gdx.gl.glClear(
-            GL20.GL_COLOR_BUFFER_BIT |
-            GL20.GL_DEPTH_BUFFER_BIT
+                GL20.GL_COLOR_BUFFER_BIT |
+                        GL20.GL_DEPTH_BUFFER_BIT
         );
 
+<<<<<<< HEAD
         // -----------------------------------------------------
         // 3D
         // -----------------------------------------------------
 
+=======
+>>>>>>> 3d
         modelBatch.begin(camera);
 
-        modelBatch.render(
-            instances,
-            environment
-        );
+        for (ModelInstance object : worldObjects) {
+
+            modelBatch.render(
+                    object,
+                    environment
+            );
+        }
 
         modelBatch.end();
+<<<<<<< HEAD
 
         // -----------------------------------------------------
         // HUD
@@ -2479,6 +2988,28 @@ public class Level1World implements Disposable {
     public PerspectiveCamera getCamera() {
 
         return camera;
+=======
+    }
+
+    public void resize(
+            int width,
+            int height
+    ) {
+
+        camera.viewportWidth = width;
+        camera.viewportHeight = height;
+
+        camera.update();
+    }
+
+    public void dispose() {
+
+        modelBatch.dispose();
+
+        for (Model model : models) {
+            model.dispose();
+        }
+>>>>>>> 3d
     }
 
     public Player getPlayer() {
@@ -2486,6 +3017,7 @@ public class Level1World implements Disposable {
         return player;
     }
 
+<<<<<<< HEAD
     public boolean isLevelCompleted() {
 
         return levelCompleted;
@@ -2534,5 +3066,9 @@ public class Level1World implements Disposable {
         playerBody = null;
         playerHead = null;
         objectiveMarker = null;
+=======
+    public PerspectiveCamera getCamera() {
+        return camera;
+>>>>>>> 3d
     }
 }
