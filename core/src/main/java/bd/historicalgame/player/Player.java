@@ -14,9 +14,10 @@ import com.badlogic.gdx.utils.Array;
  * - Camera-relative WASD movement
  * - Shift/Space jump
  * - Simple gravity
- * - Flat-roof platform landing so the player can climb the
- *   TSC/academic buildings when jumping
- * - Existing ground collision behaviour is preserved
+ * - Solid buildings: walking into a wall is blocked, exactly like
+ *   a real building - the only way up onto a roof is to jump for
+ *   it, and jumping onto a roof also blocks falling straight
+ *   through it back into the building interior.
  */
 public class Player {
 
@@ -395,18 +396,10 @@ public class Player {
         float newX =
             position.x + amount;
 
-        // While airborne, the player is allowed to clear the
-        // building edge and land on the roof.
-        if (
-            !grounded ||
-            !collidesAtGroundLevel(
-                newX,
-                position.z
-            )
-        ) {
-            position.x = newX;
-        } else {
+        if (collidesAtGroundLevel(newX, position.z)) {
             velocityX = 0f;
+        } else {
+            position.x = newX;
         }
     }
 
@@ -416,19 +409,23 @@ public class Player {
         float newZ =
             position.z + amount;
 
-        if (
-            !grounded ||
-            !collidesAtGroundLevel(
-                position.x,
-                newZ
-            )
-        ) {
-            position.z = newZ;
-        } else {
+        if (collidesAtGroundLevel(position.x, newZ)) {
             velocityZ = 0f;
+        } else {
+            position.z = newZ;
         }
     }
 
+    /**
+     * True if moving to (x, z) would walk the player into a solid
+     * building wall.
+     *
+     * A surface only blocks the player while they are below its
+     * rooftop: this is what stops "phasing through" building walls
+     * while walking (in real life you cannot walk through a wall),
+     * but still lets the player walk freely once they have jumped
+     * up onto that same surface's roof.
+     */
     private boolean collidesAtGroundLevel(
         float x,
         float z
@@ -441,10 +438,19 @@ public class Player {
         );
 
         for (CollisionSurface surface : collisionObjects) {
-            if (surface.topY <= GROUND_Y + 0.05f &&
-                bounds.overlaps(surface.bounds)) {
-                return true;
+
+            if (!bounds.overlaps(surface.bounds)) {
+                continue;
             }
+
+            // Already standing at/above this surface's roof means
+            // it was reached by jumping - treat it as walkable
+            // ground, not a wall.
+            if (position.y + 0.05f >= surface.topY) {
+                continue;
+            }
+
+            return true;
         }
 
         return false;
