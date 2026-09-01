@@ -20,30 +20,32 @@ import com.badlogic.gdx.graphics.g3d.ModelInstance;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 
 /**
- * Level 1 world for the 2x12 historical adventure.
+ * Level 1 World
  *
- * Current features:
+ * Dhaka University inspired historical campus environment.
  *
- * - 3D environment
- * - Lighting
- * - Ground
- * - Main building
- * - Classrooms
+ * Features:
+ * - 3D campus
+ * - Smooth third-person camera
+ * - Player movement
+ * - Buildings
+ * - Roads
  * - Courtyard
  * - Gate
- * - Player
- * - Player movement
- * - Third-person camera
+ * - Trees
+ * - Lamps
  * - Mission system
  * - Objective marker
  * - Direction indicator
  * - Distance indicator
- * - Mission completion
+ * - Mini-map
+ * - Level completion
  */
 public class Level1World implements Disposable {
 
@@ -61,8 +63,8 @@ public class Level1World implements Disposable {
     // HUD
     // =========================================================
 
-    private SpriteBatch spriteBatch;
-    private BitmapFont font;
+    private final SpriteBatch spriteBatch;
+    private final BitmapFont font;
 
     // =========================================================
     // CAMERA
@@ -70,12 +72,22 @@ public class Level1World implements Disposable {
 
     private PerspectiveCamera camera;
 
-    private final Vector3 cameraOffset =
-        new Vector3(
-            0f,
-            8f,
-            22f
-        );
+    private final Vector3 desiredCameraPosition =
+        new Vector3();
+
+    private final Vector3 cameraLookAt =
+        new Vector3();
+
+    /*
+     * Camera distance and height.
+     */
+    private static final float CAMERA_DISTANCE = 18f;
+    private static final float CAMERA_HEIGHT = 8f;
+
+    /*
+     * Camera smoothing.
+     */
+    private static final float CAMERA_SMOOTHNESS = 5f;
 
     // =========================================================
     // PLAYER
@@ -87,46 +99,46 @@ public class Level1World implements Disposable {
     private ModelInstance playerInstance;
 
     // =========================================================
-    // OBJECTIVE MARKER
+    // OBJECTIVE
     // =========================================================
 
     private Model objectiveMarkerModel;
     private ModelInstance objectiveMarkerInstance;
 
-    // =========================================================
-    // MISSION SYSTEM
-    // =========================================================
-
     private int missionIndex = 0;
 
     private boolean levelCompleted = false;
 
-    /*
-     * Mission target positions.
-     *
-     * Mission 0:
-     * Main Building
-     *
-     * Mission 1:
-     * Courtyard
-     *
-     * Mission 2:
-     * Notice / central investigation point
-     */
+    private float missionCompleteTimer = 0f;
+
+    private static final float OBJECTIVE_DISTANCE = 3.5f;
+
     private final Vector3[] missionTargets = {
 
+        /*
+         * Mission 1:
+         * Entrance/front of Main Building.
+         */
         new Vector3(
             0f,
             1f,
-            -10f
+            -4.5f
         ),
 
+        /*
+         * Mission 2:
+         * Central courtyard.
+         */
         new Vector3(
             0f,
             1f,
             5f
         ),
 
+        /*
+         * Mission 3:
+         * Central investigation point.
+         */
         new Vector3(
             0f,
             1f,
@@ -145,17 +157,12 @@ public class Level1World implements Disposable {
 
     private final String[] missionDescriptions = {
 
-        "Go to the Main Building.",
+        "Reach the Main Building.",
 
-        "Investigate the Courtyard.",
+        "Investigate the central courtyard.",
 
         "Find the notice and investigate it."
     };
-
-    /*
-     * Distance required to complete an objective.
-     */
-    private static final float OBJECTIVE_DISTANCE = 4.0f;
 
     // =========================================================
     // CONSTRUCTOR
@@ -198,23 +205,29 @@ public class Level1World implements Disposable {
 
     private void createLighting() {
 
+        /*
+         * Soft ambient daylight.
+         */
         environment.set(
             ColorAttribute.createAmbient(
-                0.65f,
-                0.65f,
-                0.65f,
+                0.72f,
+                0.70f,
+                0.64f,
                 1f
             )
         );
 
+        /*
+         * Warm sunlight.
+         */
         environment.add(
             new DirectionalLight().set(
                 1.0f,
-                0.95f,
-                0.85f,
+                0.92f,
+                0.78f,
+                -0.7f,
                 -1.0f,
-                -0.8f,
-                -0.5f
+                -0.4f
             )
         );
     }
@@ -248,19 +261,17 @@ public class Level1World implements Disposable {
 
         camera.position.set(
             0f,
-            8f,
-            22f
+            CAMERA_HEIGHT,
+            28f
         );
 
-        camera.near =
-            0.1f;
+        camera.near = 0.1f;
 
-        camera.far =
-            500f;
+        camera.far = 500f;
 
         camera.lookAt(
             0f,
-            2f,
+            1.5f,
             0f
         );
 
@@ -277,9 +288,50 @@ public class Level1World implements Disposable {
             new Player(
                 0f,
                 1f,
-                10f,
+                12f,
                 GameConfig.PLAYER_SPEED
             );
+
+        /*
+         * Building collision areas.
+         */
+        player.addCollision(
+            -9f,
+            -14f,
+            18f,
+            8f
+        );
+
+        player.addCollision(
+            -23f,
+            -6.5f,
+            12f,
+            7f
+        );
+
+        player.addCollision(
+            11f,
+            -6.5f,
+            12f,
+            7f
+        );
+
+        /*
+         * Gate pillars.
+         */
+        player.addCollision(
+            -13f,
+            14f,
+            2f,
+            2f
+        );
+
+        player.addCollision(
+            11f,
+            14f,
+            2f,
+            2f
+        );
 
         ModelBuilder builder =
             new ModelBuilder();
@@ -288,6 +340,9 @@ public class Level1World implements Disposable {
             VertexAttributes.Usage.Position |
             VertexAttributes.Usage.Normal;
 
+        /*
+         * Temporary character.
+         */
         playerModel =
             builder.createBox(
                 1.2f,
@@ -297,7 +352,7 @@ public class Level1World implements Disposable {
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "C98B5A"
+                                "B96F45"
                             )
                         )
                     }
@@ -322,6 +377,27 @@ public class Level1World implements Disposable {
     }
 
     // =========================================================
+    // PLAYER MODEL
+    // =========================================================
+
+    private void updatePlayerModel() {
+
+        if (
+            player == null ||
+            playerInstance == null
+        ) {
+            return;
+        }
+
+        playerInstance.transform
+            .setToTranslation(
+                player.getX(),
+                player.getY(),
+                player.getZ()
+            );
+    }
+
+    // =========================================================
     // OBJECTIVE MARKER
     // =========================================================
 
@@ -334,20 +410,17 @@ public class Level1World implements Disposable {
             VertexAttributes.Usage.Position |
             VertexAttributes.Usage.Normal;
 
-        /*
-         * Tall marker above the objective.
-         */
         objectiveMarkerModel =
             builder.createCylinder(
-                1.2f,
-                4f,
-                1.2f,
+                1.0f,
+                3.5f,
+                1.0f,
                 20,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "E8B84A"
+                                "E7B84B"
                             )
                         )
                     }
@@ -372,28 +445,7 @@ public class Level1World implements Disposable {
     }
 
     // =========================================================
-    // UPDATE PLAYER MODEL
-    // =========================================================
-
-    private void updatePlayerModel() {
-
-        if (
-            player == null ||
-            playerInstance == null
-        ) {
-            return;
-        }
-
-        playerInstance.transform
-            .setToTranslation(
-                player.getX(),
-                player.getY(),
-                player.getZ()
-            );
-    }
-
-    // =========================================================
-    // UPDATE OBJECTIVE MARKER
+    // OBJECTIVE MARKER UPDATE
     // =========================================================
 
     private void updateObjectiveMarker() {
@@ -411,52 +463,25 @@ public class Level1World implements Disposable {
             ];
 
         /*
-         * Put marker above the target.
+         * Floating marker above objective.
          */
+        float floatingY =
+            3.5f +
+            MathUtils.sin(
+                missionCompleteTimer * 2f
+            ) * 0.3f;
+
         objectiveMarkerInstance
             .transform
             .setToTranslation(
                 target.x,
-                3.0f,
+                floatingY,
                 target.z
             );
     }
 
     // =========================================================
-    // CAMERA FOLLOW
-    // =========================================================
-
-    private void updateCamera() {
-
-        if (
-            camera == null ||
-            player == null
-        ) {
-            return;
-        }
-
-        camera.position.set(
-            player.getX()
-                + cameraOffset.x,
-
-            player.getY()
-                + cameraOffset.y,
-
-            player.getZ()
-                + cameraOffset.z
-        );
-
-        camera.lookAt(
-            player.getX(),
-            player.getY() + 0.8f,
-            player.getZ()
-        );
-
-        camera.update();
-    }
-
-    // =========================================================
-    // WORLD
+    // WORLD CREATION
     // =========================================================
 
     private void createWorld() {
@@ -469,6 +494,11 @@ public class Level1World implements Disposable {
             VertexAttributes.Usage.Normal;
 
         createGround(
+            builder,
+            attributes
+        );
+
+        createRoads(
             builder,
             attributes
         );
@@ -492,6 +522,21 @@ public class Level1World implements Disposable {
             builder,
             attributes
         );
+
+        createTrees(
+            builder,
+            attributes
+        );
+
+        createLamps(
+            builder,
+            attributes
+        );
+
+        createCampusWalls(
+            builder,
+            attributes
+        );
     }
 
     // =========================================================
@@ -505,14 +550,14 @@ public class Level1World implements Disposable {
 
         Model groundModel =
             builder.createBox(
-                60f,
+                70f,
                 0.4f,
-                40f,
+                50f,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "4B6B3C"
+                                "31522A"
                             )
                         )
                     }
@@ -529,15 +574,101 @@ public class Level1World implements Disposable {
                 groundModel
             );
 
-        ground.transform
+        ground.transform.setToTranslation(
+            0f,
+            -0.2f,
+            0f
+        );
+
+        instances.add(
+            ground
+        );
+    }
+
+    // =========================================================
+    // ROADS
+    // =========================================================
+
+    private void createRoads(
+        ModelBuilder builder,
+        long attributes
+    ) {
+
+        Model roadModel =
+            builder.createBox(
+                20f,
+                0.18f,
+                35f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "75664C"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            roadModel
+        );
+
+        ModelInstance centralRoad =
+            new ModelInstance(
+                roadModel
+            );
+
+        centralRoad.transform
             .setToTranslation(
                 0f,
-                -0.2f,
+                0.1f,
                 0f
             );
 
         instances.add(
-            ground
+            centralRoad
+        );
+
+        /*
+         * Cross road.
+         */
+        Model crossRoadModel =
+            builder.createBox(
+                55f,
+                0.16f,
+                7f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "665844"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            crossRoadModel
+        );
+
+        ModelInstance crossRoad =
+            new ModelInstance(
+                crossRoadModel
+            );
+
+        crossRoad.transform
+            .setToTranslation(
+                0f,
+                0.09f,
+                7f
+            );
+
+        instances.add(
+            crossRoad
         );
     }
 
@@ -559,7 +690,7 @@ public class Level1World implements Disposable {
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "D8C7A3"
+                                "C9B58D"
                             )
                         )
                     }
@@ -586,6 +717,91 @@ public class Level1World implements Disposable {
         instances.add(
             building
         );
+
+        /*
+         * Entrance platform.
+         */
+        Model entranceModel =
+            builder.createBox(
+                10f,
+                0.4f,
+                3f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "9A8060"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            entranceModel
+        );
+
+        ModelInstance entrance =
+            new ModelInstance(
+                entranceModel
+            );
+
+        entrance.transform
+            .setToTranslation(
+                0f,
+                0.2f,
+                -5.2f
+            );
+
+        instances.add(
+            entrance
+        );
+
+        /*
+         * Entrance pillars.
+         */
+        Model pillarModel =
+            builder.createBox(
+                1.1f,
+                6f,
+                1.1f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "D7C49A"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            pillarModel
+        );
+
+        addInstance(
+            pillarModel,
+            0f,
+            3f,
+            -5.8f
+        );
+
+        addInstance(
+            pillarModel,
+            -7f,
+            3f,
+            -5.8f
+        );
+
+        addInstance(
+            pillarModel,
+            7f,
+            3f,
+            -5.8f
+        );
     }
 
     // =========================================================
@@ -606,7 +822,7 @@ public class Level1World implements Disposable {
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "B8A47A"
+                                "A99570"
                             )
                         )
                     }
@@ -618,12 +834,12 @@ public class Level1World implements Disposable {
             classroomModel
         );
 
-        ModelInstance leftClassroom =
+        ModelInstance left =
             new ModelInstance(
                 classroomModel
             );
 
-        leftClassroom.transform
+        left.transform
             .setToTranslation(
                 -17f,
                 2.5f,
@@ -631,15 +847,15 @@ public class Level1World implements Disposable {
             );
 
         instances.add(
-            leftClassroom
+            left
         );
 
-        ModelInstance rightClassroom =
+        ModelInstance right =
             new ModelInstance(
                 classroomModel
             );
 
-        rightClassroom.transform
+        right.transform
             .setToTranslation(
                 17f,
                 2.5f,
@@ -647,7 +863,45 @@ public class Level1World implements Disposable {
             );
 
         instances.add(
-            rightClassroom
+            right
+        );
+
+        /*
+         * Back academic buildings.
+         */
+        Model backModel =
+            builder.createBox(
+                14f,
+                5f,
+                6f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "B5A27D"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            backModel
+        );
+
+        addInstance(
+            backModel,
+            -18f,
+            2.5f,
+            11f
+        );
+
+        addInstance(
+            backModel,
+            18f,
+            2.5f,
+            11f
         );
     }
 
@@ -663,14 +917,13 @@ public class Level1World implements Disposable {
         Model courtyardModel =
             builder.createBox(
                 18f,
-                0.5f,
+                0.35f,
                 14f,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "8E8068"
-                                
+                                "88775B"
                             )
                         )
                     }
@@ -690,7 +943,7 @@ public class Level1World implements Disposable {
         courtyard.transform
             .setToTranslation(
                 0f,
-                0.25f,
+                0.18f,
                 5f
             );
 
@@ -710,14 +963,14 @@ public class Level1World implements Disposable {
 
         Model pillarModel =
             builder.createBox(
-                2f,
+                2.2f,
                 8f,
-                2f,
+                2.2f,
                 new Material(
                     new Attribute[]{
                         ColorAttribute.createDiffuse(
                             Color.valueOf(
-                                "C5B28A"
+                                "C7B188"
                             )
                         )
                     }
@@ -729,110 +982,459 @@ public class Level1World implements Disposable {
             pillarModel
         );
 
-        ModelInstance leftPillar =
-            new ModelInstance(
-                pillarModel
-            );
-
-        leftPillar.transform
-            .setToTranslation(
-                -12f,
-                4f,
-                15f
-            );
-
-        instances.add(
-            leftPillar
+        addInstance(
+            pillarModel,
+            -12f,
+            4f,
+            15f
         );
 
-        ModelInstance rightPillar =
-            new ModelInstance(
-                pillarModel
+        addInstance(
+            pillarModel,
+            12f,
+            4f,
+            15f
+        );
+
+        /*
+         * Gate top beam.
+         */
+        Model gateTopModel =
+            builder.createBox(
+                26f,
+                1.2f,
+                1.5f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "9C805B"
+                            )
+                        )
+                    }
+                ),
+                attributes
             );
 
-        rightPillar.transform
-            .setToTranslation(
-                12f,
-                4f,
-                15f
-            );
+        models.add(
+            gateTopModel
+        );
 
-        instances.add(
-            rightPillar
+        addInstance(
+            gateTopModel,
+            0f,
+            7.2f,
+            15f
         );
     }
 
     // =========================================================
-    // MISSION SYSTEM
+    // TREES
     // =========================================================
 
-    private void updateMission() {
+    private void createTrees(
+        ModelBuilder builder,
+        long attributes
+    ) {
 
-        if (levelCompleted) {
-            return;
-        }
-
-        Vector3 target =
-            missionTargets[
-                missionIndex
-            ];
-
-        float dx =
-            player.getX() - target.x;
-
-        float dz =
-            player.getZ() - target.z;
-
-        float distance =
-            (float) Math.sqrt(
-                dx * dx +
-                dz * dz
+        Model trunkModel =
+            builder.createCylinder(
+                0.55f,
+                3.5f,
+                0.55f,
+                10,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "63442D"
+                            )
+                        )
+                    }
+                ),
+                attributes
             );
+
+        Model leavesModel =
+            builder.createSphere(
+                3.8f,
+                3.8f,
+                3.8f,
+                12,
+                8,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "3F7139"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            trunkModel
+        );
+
+        models.add(
+            leavesModel
+        );
 
         /*
-         * Objective reached.
+         * Left side.
          */
-        if (
-            distance <=
-            OBJECTIVE_DISTANCE
-        ) {
+        addTree(
+            trunkModel,
+            leavesModel,
+            -27f,
+            0f,
+            -12f
+        );
 
-            System.out.println(
-                "MISSION COMPLETE: "
-                + missionTitles[
-                    missionIndex
-                ]
+        addTree(
+            trunkModel,
+            leavesModel,
+            -27f,
+            0f,
+            0f
+        );
+
+        addTree(
+            trunkModel,
+            leavesModel,
+            -27f,
+            0f,
+            12f
+        );
+
+        /*
+         * Right side.
+         */
+        addTree(
+            trunkModel,
+            leavesModel,
+            27f,
+            0f,
+            -12f
+        );
+
+        addTree(
+            trunkModel,
+            leavesModel,
+            27f,
+            0f,
+            0f
+        );
+
+        addTree(
+            trunkModel,
+            leavesModel,
+            27f,
+            0f,
+            12f
+        );
+
+        /*
+         * Courtyard trees.
+         */
+        addTree(
+            trunkModel,
+            leavesModel,
+            -9f,
+            0f,
+            5f
+        );
+
+        addTree(
+            trunkModel,
+            leavesModel,
+            9f,
+            0f,
+            5f
+        );
+
+        addTree(
+            trunkModel,
+            leavesModel,
+            -9f,
+            0f,
+            10f
+        );
+
+        addTree(
+            trunkModel,
+            leavesModel,
+            9f,
+            0f,
+            10f
+        );
+    }
+
+    // =========================================================
+    // TREE HELPER
+    // =========================================================
+
+    private void addTree(
+        Model trunkModel,
+        Model leavesModel,
+        float x,
+        float y,
+        float z
+    ) {
+
+        ModelInstance trunk =
+            new ModelInstance(
+                trunkModel
             );
 
-            missionIndex++;
+        trunk.transform
+            .setToTranslation(
+                x,
+                y + 1.75f,
+                z
+            );
 
-            /*
-             * All Level 1 missions completed.
-             */
-            if (
-                missionIndex >=
-                missionTargets.length
-            ) {
+        instances.add(
+            trunk
+        );
 
-                levelCompleted = true;
+        ModelInstance leaves =
+            new ModelInstance(
+                leavesModel
+            );
 
-                System.out.println(
-                    "================================"
-                );
+        leaves.transform
+            .setToTranslation(
+                x,
+                y + 4.1f,
+                z
+            );
 
-                System.out.println(
-                    "LEVEL 1 COMPLETE!"
-                );
+        instances.add(
+            leaves
+        );
+    }
 
-                System.out.println(
-                    "================================"
-                );
+    // =========================================================
+    // LAMPS
+    // =========================================================
 
-            } else {
+    private void createLamps(
+        ModelBuilder builder,
+        long attributes
+    ) {
 
-                updateObjectiveMarker();
-            }
-        }
+        Model poleModel =
+            builder.createCylinder(
+                0.18f,
+                4f,
+                0.18f,
+                8,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "393633"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        Model lightModel =
+            builder.createSphere(
+                0.7f,
+                0.7f,
+                0.7f,
+                8,
+                8,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "F2D58A"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            poleModel
+        );
+
+        models.add(
+            lightModel
+        );
+
+        addLamp(
+            poleModel,
+            lightModel,
+            -10f,
+            7f
+        );
+
+        addLamp(
+            poleModel,
+            lightModel,
+            10f,
+            7f
+        );
+
+        addLamp(
+            poleModel,
+            lightModel,
+            -10f,
+            0f
+        );
+
+        addLamp(
+            poleModel,
+            lightModel,
+            10f,
+            0f
+        );
+
+        addLamp(
+            poleModel,
+            lightModel,
+            -10f,
+            14f
+        );
+
+        addLamp(
+            poleModel,
+            lightModel,
+            10f,
+            14f
+        );
+    }
+
+    // =========================================================
+    // LAMP HELPER
+    // =========================================================
+
+    private void addLamp(
+        Model poleModel,
+        Model lightModel,
+        float x,
+        float z
+    ) {
+
+        ModelInstance pole =
+            new ModelInstance(
+                poleModel
+            );
+
+        pole.transform
+            .setToTranslation(
+                x,
+                2f,
+                z
+            );
+
+        instances.add(
+            pole
+        );
+
+        ModelInstance light =
+            new ModelInstance(
+                lightModel
+            );
+
+        light.transform
+            .setToTranslation(
+                x,
+                4.2f,
+                z
+            );
+
+        instances.add(
+            light
+        );
+    }
+
+    // =========================================================
+    // CAMPUS WALLS
+    // =========================================================
+
+    private void createCampusWalls(
+        ModelBuilder builder,
+        long attributes
+    ) {
+
+        Model wallModel =
+            builder.createBox(
+                70f,
+                2.5f,
+                0.5f,
+                new Material(
+                    new Attribute[]{
+                        ColorAttribute.createDiffuse(
+                            Color.valueOf(
+                                "77664E"
+                            )
+                        )
+                    }
+                ),
+                attributes
+            );
+
+        models.add(
+            wallModel
+        );
+
+        /*
+         * Back wall.
+         */
+        addInstance(
+            wallModel,
+            0f,
+            1.25f,
+            -24f
+        );
+
+        /*
+         * Front wall.
+         */
+        addInstance(
+            wallModel,
+            0f,
+            1.25f,
+            24f
+        );
+    }
+
+    // =========================================================
+    // INSTANCE HELPER
+    // =========================================================
+
+    private void addInstance(
+        Model model,
+        float x,
+        float y,
+        float z
+    ) {
+
+        ModelInstance instance =
+            new ModelInstance(
+                model
+            );
+
+        instance.transform
+            .setToTranslation(
+                x,
+                y,
+                z
+            );
+
+        instances.add(
+            instance
+        );
     }
 
     // =========================================================
@@ -841,39 +1443,91 @@ public class Level1World implements Disposable {
 
     public void update(float delta) {
 
-        if (levelCompleted) {
-
-            /*
-             * Allow ESC to exit Level 1
-             * later through Main.
-             */
-            return;
+        if (delta > 0.1f) {
+            delta = 0.1f;
         }
 
-        if (player != null) {
+        missionCompleteTimer += delta;
 
-            player.update(
-                delta
-            );
+        /*
+         * Update player.
+         */
+        if (
+            player != null &&
+            !levelCompleted
+        ) {
+
+            player.update(delta);
+
+            updatePlayerModel();
+
+            updateCamera();
+
+            checkMissionProgress();
         }
 
-        updatePlayerModel();
-
-        updateCamera();
-
-        updateMission();
+        updateObjectiveMarker();
     }
 
     // =========================================================
-    // HUD
+    // CAMERA UPDATE
     // =========================================================
 
-    private void renderHUD() {
+    private void updateCamera() {
+
+        if (
+            camera == null ||
+            player == null
+        ) {
+            return;
+        }
+
+        /*
+         * Third-person camera behind player.
+         *
+         * Current player movement uses world Z.
+         */
+        desiredCameraPosition.set(
+            player.getX(),
+            player.getY() + CAMERA_HEIGHT,
+            player.getZ() + CAMERA_DISTANCE
+        );
+
+        /*
+         * Smooth camera movement.
+         */
+        float smoothing =
+            1f -
+            (float) Math.exp(
+                -CAMERA_SMOOTHNESS *
+                Gdx.graphics.getDeltaTime()
+            );
+
+        camera.position.lerp(
+            desiredCameraPosition,
+            smoothing
+        );
+
+        cameraLookAt.set(
+            player.getX(),
+            player.getY() + 1.0f,
+            player.getZ()
+        );
+
+        camera.lookAt(
+            cameraLookAt
+        );
+
+        camera.update();
+    }
+
+    // =========================================================
+    // MISSION CHECK
+    // =========================================================
+
+    private void checkMissionProgress() {
 
         if (levelCompleted) {
-
-            renderLevelComplete();
-
             return;
         }
 
@@ -883,10 +1537,12 @@ public class Level1World implements Disposable {
             ];
 
         float dx =
-            target.x - player.getX();
+            player.getX() -
+            target.x;
 
         float dz =
-            target.z - player.getZ();
+            player.getZ() -
+            target.z;
 
         float distance =
             (float) Math.sqrt(
@@ -894,229 +1550,32 @@ public class Level1World implements Disposable {
                 dz * dz
             );
 
-        String direction =
-            getDirection(
-                dx,
-                dz
-            );
-
-        int width =
-            Gdx.graphics.getWidth();
-
-        int height =
-            Gdx.graphics.getHeight();
-
-        spriteBatch.begin();
-
-        /*
-         * Mission number.
-         */
-        font.getData()
-            .setScale(
-                1.5f
-            );
-
-        font.setColor(
-            Color.WHITE
-        );
-
-        font.draw(
-            spriteBatch,
-            "MISSION "
-                + (missionIndex + 1)
-                + " / "
-                + missionTargets.length,
-
-            40,
-            height - 40
-        );
-
-        /*
-         * Mission title.
-         */
-        font.getData()
-            .setScale(
-                1.8f
-            );
-
-        font.draw(
-            spriteBatch,
-
-            missionTitles[
-                missionIndex
-            ],
-
-            40,
-            height - 80
-        );
-
-        /*
-         * Mission description.
-         */
-        font.getData()
-            .setScale(
-                1.1f
-            );
-
-        font.draw(
-            spriteBatch,
-
-            missionDescriptions[
-                missionIndex
-            ],
-
-            40,
-            height - 120
-        );
-
-        /*
-         * Direction.
-         */
-        font.getData()
-            .setScale(
-                1.4f
-            );
-
-        font.draw(
-            spriteBatch,
-
-            "DIRECTION: "
-                + direction,
-
-            40,
-            90
-        );
-
-        /*
-         * Distance.
-         */
-        font.draw(
-            spriteBatch,
-
-            "DISTANCE: "
-                + String.format(
-                    "%.1f",
-                    distance
-                )
-                + " m",
-
-            40,
-            55
-        );
-
-        /*
-         * Controls.
-         */
-        font.getData()
-            .setScale(
-                1.0f
-            );
-
-        font.draw(
-            spriteBatch,
-
-            "W A S D  Move     ESC  Pause",
-
-            40,
-            25
-        );
-
-        spriteBatch.end();
-    }
-
-    // =========================================================
-    // DIRECTION CALCULATION
-    // =========================================================
-
-    private String getDirection(
-        float dx,
-        float dz
-    ) {
-
         if (
-            Math.abs(dx) <
-                1.5f &&
-            Math.abs(dz) <
-                1.5f
+            distance <=
+            OBJECTIVE_DISTANCE
         ) {
 
-            return "HERE";
-        }
+            missionIndex++;
 
-        /*
-         * World Z negative = forward.
-         */
-        if (
-            Math.abs(dx) >
-            Math.abs(dz)
-        ) {
+            if (
+                missionIndex >=
+                missionTargets.length
+            ) {
 
-            if (dx > 0) {
-                return "RIGHT";
+                levelCompleted = true;
+
+                System.out.println(
+                    "LEVEL 1 COMPLETE"
+                );
+
             } else {
-                return "LEFT";
-            }
 
-        } else {
-
-            if (dz > 0) {
-                return "BACK";
-            } else {
-                return "FORWARD";
+                System.out.println(
+                    "Mission completed. Next: " +
+                    missionTitles[missionIndex]
+                );
             }
         }
-    }
-
-    // =========================================================
-    // LEVEL COMPLETE
-    // =========================================================
-
-    private void renderLevelComplete() {
-
-        int width =
-            Gdx.graphics.getWidth();
-
-        int height =
-            Gdx.graphics.getHeight();
-
-        spriteBatch.begin();
-
-        font.setColor(
-            Color.WHITE
-        );
-
-        font.getData()
-            .setScale(
-                3.0f
-            );
-
-        font.draw(
-            spriteBatch,
-            "LEVEL 1 COMPLETE!",
-            width / 2f - 210,
-            height / 2f + 50
-        );
-
-        font.getData()
-            .setScale(
-                1.4f
-            );
-
-        font.draw(
-            spriteBatch,
-            "You completed all objectives.",
-            width / 2f - 150,
-            height / 2f
-        );
-
-        font.draw(
-            spriteBatch,
-            "LEVEL 2 UNLOCKED",
-            width / 2f - 120,
-            height / 2f - 50
-        );
-
-        spriteBatch.end();
     }
 
     // =========================================================
@@ -1131,6 +1590,10 @@ public class Level1World implements Disposable {
         int height =
             Gdx.graphics.getHeight();
 
+        if (width <= 0) {
+            width = GameConfig.WIDTH;
+        }
+
         if (height <= 0) {
             height = 1;
         }
@@ -1142,14 +1605,20 @@ public class Level1World implements Disposable {
             height
         );
 
+        /*
+         * Depth testing.
+         */
         Gdx.gl.glEnable(
             GL20.GL_DEPTH_TEST
         );
 
+        /*
+         * Atmospheric dark blue sky.
+         */
         Gdx.gl.glClearColor(
-            0.08f,
-            0.12f,
-            0.16f,
+            0.07f,
+            0.11f,
+            0.15f,
             1f
         );
 
@@ -1159,7 +1628,7 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * 3D world.
+         * Render 3D world.
          */
         modelBatch.begin(
             camera
@@ -1173,29 +1642,396 @@ public class Level1World implements Disposable {
         modelBatch.end();
 
         /*
-         * 2D mission HUD.
+         * Render HUD.
          */
         renderHUD();
     }
 
     // =========================================================
-    // GETTERS
+    // HUD
+    // =========================================================
+
+    private void renderHUD() {
+
+        spriteBatch.begin();
+
+        if (levelCompleted) {
+
+            renderLevelComplete();
+
+        } else {
+
+            renderMissionHUD();
+
+            renderMiniMap();
+
+            renderDirectionIndicator();
+        }
+
+        spriteBatch.end();
+    }
+
+    // =========================================================
+    // MISSION HUD
+    // =========================================================
+
+    private void renderMissionHUD() {
+
+        font.getData().setScale(
+            1.25f
+        );
+
+        font.draw(
+            spriteBatch,
+            "LEVEL 1",
+            30f,
+            Gdx.graphics.getHeight() - 35f
+        );
+
+        font.getData().setScale(
+            1.05f
+        );
+
+        font.draw(
+            spriteBatch,
+            "OBJECTIVE: " +
+            missionTitles[missionIndex],
+            30f,
+            Gdx.graphics.getHeight() - 70f
+        );
+
+        font.getData().setScale(
+            0.9f
+        );
+
+        font.draw(
+            spriteBatch,
+            missionDescriptions[
+                missionIndex
+            ],
+            30f,
+            Gdx.graphics.getHeight() - 100f
+        );
+
+        /*
+         * Distance.
+         */
+        Vector3 target =
+            missionTargets[
+                missionIndex
+            ];
+
+        float dx =
+            player.getX() -
+            target.x;
+
+        float dz =
+            player.getZ() -
+            target.z;
+
+        float distance =
+            (float) Math.sqrt(
+                dx * dx +
+                dz * dz
+            );
+
+        font.draw(
+            spriteBatch,
+            "Distance: " +
+            String.format(
+                "%.1f m",
+                distance
+            ),
+            30f,
+            Gdx.graphics.getHeight() - 130f
+        );
+
+        font.getData().setScale(
+            0.8f
+        );
+
+        font.draw(
+            spriteBatch,
+            "W A S D  Move",
+            30f,
+            65f
+        );
+
+        font.draw(
+            spriteBatch,
+            "ESC  Pause",
+            30f,
+            38f
+        );
+
+        font.getData().setScale(
+            1f
+        );
+    }
+
+    // =========================================================
+    // DIRECTION INDICATOR
+    // =========================================================
+
+    private void renderDirectionIndicator() {
+
+        Vector3 target =
+            missionTargets[
+                missionIndex
+            ];
+
+        float dx =
+            target.x -
+            player.getX();
+
+        float dz =
+            target.z -
+            player.getZ();
+
+        String direction;
+
+        if (
+            Math.abs(dx) >
+            Math.abs(dz)
+        ) {
+
+            if (dx > 0) {
+                direction = "EAST →";
+            } else {
+                direction = "← WEST";
+            }
+
+        } else {
+
+            if (dz > 0) {
+                direction = "SOUTH ↓";
+            } else {
+                direction = "NORTH ↑";
+            }
+        }
+
+        font.getData().setScale(
+            1.15f
+        );
+
+        float x =
+            Gdx.graphics.getWidth() / 2f -
+            55f;
+
+        font.draw(
+            spriteBatch,
+            direction,
+            x,
+            Gdx.graphics.getHeight() - 35f
+        );
+
+        font.getData().setScale(
+            1f
+        );
+    }
+
+    // =========================================================
+    // MINI MAP
+    // =========================================================
+
+    private void renderMiniMap() {
+
+        float mapSize = 150f;
+
+        float mapX =
+            Gdx.graphics.getWidth() -
+            mapSize -
+            25f;
+
+        float mapY =
+            Gdx.graphics.getHeight() -
+            mapSize -
+            30f;
+
+        /*
+         * Simple border.
+         */
+        font.getData().setScale(
+            0.85f
+        );
+
+        font.draw(
+            spriteBatch,
+            "MAP",
+            mapX,
+            mapY + mapSize + 18f
+        );
+
+        /*
+         * Player marker.
+         */
+        float normalizedX =
+            (player.getX() + 30f) /
+            60f;
+
+        float normalizedZ =
+            (player.getZ() + 20f) /
+            40f;
+
+        float px =
+            mapX +
+            MathUtils.clamp(
+                normalizedX,
+                0f,
+                1f
+            ) * mapSize;
+
+        float py =
+            mapY +
+            MathUtils.clamp(
+                normalizedZ,
+                0f,
+                1f
+            ) * mapSize;
+
+        font.draw(
+            spriteBatch,
+            "●",
+            px,
+            py
+        );
+
+        /*
+         * Objective marker.
+         */
+        Vector3 target =
+            missionTargets[
+                missionIndex
+            ];
+
+        float targetX =
+            mapX +
+            MathUtils.clamp(
+                (target.x + 30f) / 60f,
+                0f,
+                1f
+            ) * mapSize;
+
+        float targetY =
+            mapY +
+            MathUtils.clamp(
+                (target.z + 20f) / 40f,
+                0f,
+                1f
+            ) * mapSize;
+
+        font.draw(
+            spriteBatch,
+            "★",
+            targetX,
+            targetY
+        );
+
+        font.getData().setScale(
+            1f
+        );
+    }
+
+    // =========================================================
+    // LEVEL COMPLETE
+    // =========================================================
+
+    private void renderLevelComplete() {
+
+        float centerX =
+            Gdx.graphics.getWidth() / 2f;
+
+        float centerY =
+            Gdx.graphics.getHeight() / 2f;
+
+        font.getData().setScale(
+            2.8f
+        );
+
+        font.draw(
+            spriteBatch,
+            "LEVEL 1 COMPLETE",
+            centerX - 230f,
+            centerY + 50f
+        );
+
+        font.getData().setScale(
+            1.3f
+        );
+
+        font.draw(
+            spriteBatch,
+            "WHERE IT ALL BEGAN",
+            centerX - 135f,
+            centerY
+        );
+
+        font.getData().setScale(
+            1f
+        );
+
+        font.draw(
+            spriteBatch,
+            "All objectives completed.",
+            centerX - 100f,
+            centerY - 50f
+        );
+
+        font.draw(
+            spriteBatch,
+            "Press ESC to return.",
+            centerX - 90f,
+            centerY - 90f
+        );
+    }
+
+    // =========================================================
+    // CAMERA GETTER
     // =========================================================
 
     public PerspectiveCamera getCamera() {
         return camera;
     }
 
+    // =========================================================
+    // PLAYER GETTER
+    // =========================================================
+
     public Player getPlayer() {
         return player;
     }
+
+    // =========================================================
+    // LEVEL COMPLETE GETTER
+    // =========================================================
 
     public boolean isLevelCompleted() {
         return levelCompleted;
     }
 
-    public int getMissionIndex() {
-        return missionIndex;
+    // =========================================================
+    // RESIZE
+    // =========================================================
+
+    public void resize(
+        int width,
+        int height
+    ) {
+
+        if (
+            camera == null ||
+            height <= 0
+        ) {
+            return;
+        }
+
+        camera.viewportWidth =
+            width;
+
+        camera.viewportHeight =
+            height;
+
+        camera.update();
     }
 
     // =========================================================
