@@ -1,5 +1,6 @@
 package bd.historicalgame.ui;
 
+import bd.historicalgame.assets.FontManager;
 import bd.historicalgame.game.GameState;
 
 import com.badlogic.gdx.Gdx;
@@ -10,12 +11,12 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Interpolation;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
@@ -62,22 +63,27 @@ public class UIManager implements Disposable {
      */
 
     private static final Color GOLD =
-        Color.valueOf("E8BC55");
+        Color.valueOf("EFC868");
 
     private static final Color GOLD_SOFT =
         Color.valueOf("B9923F");
 
     private static final Color CYAN =
-        Color.valueOf("6FE7E0");
+        Color.valueOf("81EFE8");
 
     private static final Color WHITE =
-        Color.valueOf("F6F1E7");
+        Color.valueOf("FBF8F1");
 
+    /*
+     * Brightened from the original E7E0D3 / A7A39B so body and
+     * hint text stay easily readable now that it renders at its
+     * true crisp size instead of a blurred, stretched bitmap font.
+     */
     private static final Color TEXT =
-        Color.valueOf("E7E0D3");
+        Color.valueOf("F1ECE1");
 
     private static final Color MUTED =
-        Color.valueOf("A7A39B");
+        Color.valueOf("BDB8AC");
 
     private static final Color DARK =
         Color.valueOf("090D12");
@@ -90,14 +96,35 @@ public class UIManager implements Disposable {
 
     /*
      * =========================================================
+     * TYPOGRAPHY
+     * =========================================================
+     */
+
+    /**
+     * Reference pixel size for a "scale" of 1.0. Callers keep
+     * passing the same relative scale values as before; this class
+     * turns that into a real font generated at that exact pixel
+     * size (instead of stretching one tiny bitmap font), which is
+     * what actually fixes the blurriness.
+     */
+    private static final float BASE_FONT_PX = 17f;
+
+    private static final int MIN_FONT_PX = 12;
+    private static final int MAX_FONT_PX = 92;
+
+    private static final int BUTTON_FONT_PX = 19;
+
+    /*
+     * =========================================================
      * CORE
      * =========================================================
      */
 
     private final Stage stage;
-    private final Skin skin;
-    private final BitmapFont font;
+    private final FontManager fontManager;
     private final ShapeRenderer shapes;
+
+    private TextButton.TextButtonStyle buttonStyle;
 
     /*
      * =========================================================
@@ -146,18 +173,15 @@ public class UIManager implements Disposable {
                 new ScreenViewport()
             );
 
-        skin =
-            new Skin();
-
-        font =
-            new BitmapFont();
+        fontManager =
+            new FontManager();
 
         shapes =
             new ShapeRenderer();
 
         createTextures();
 
-        configureSkin();
+        configureButtonStyle();
     }
 
     /*
@@ -277,28 +301,15 @@ public class UIManager implements Disposable {
      * =========================================================
      */
 
-    private void configureSkin() {
+    private void configureButtonStyle() {
 
-        skin.add(
-            "font",
-            font
-        );
-
-        Label.LabelStyle labelStyle =
-            new Label.LabelStyle();
-
-        labelStyle.font = font;
-        labelStyle.fontColor = TEXT;
-
-        skin.add(
-            "default",
-            labelStyle
-        );
+        BitmapFont buttonFont =
+            fontManager.getBold(BUTTON_FONT_PX);
 
         TextButton.TextButtonStyle style =
             new TextButton.TextButtonStyle();
 
-        style.font = font;
+        style.font = buttonFont;
 
         style.fontColor =
             TEXT;
@@ -318,10 +329,7 @@ public class UIManager implements Disposable {
         style.down =
             downDrawable;
 
-        skin.add(
-            "cinematic",
-            style
-        );
+        buttonStyle = style;
     }
 
     /*
@@ -733,13 +741,8 @@ public class UIManager implements Disposable {
         TextButton button =
             new TextButton(
                 text,
-                skin,
-                "cinematic"
+                buttonStyle
             );
-
-        button
-            .getLabel()
-            .setFontScale(0.80f);
 
         button.addListener(
             new ClickListener() {
@@ -772,15 +775,29 @@ public class UIManager implements Disposable {
         Color color
     ) {
 
+        int pixelSize =
+            MathUtils.clamp(
+                Math.round(BASE_FONT_PX * scale),
+                MIN_FONT_PX,
+                MAX_FONT_PX
+            );
+
+        BitmapFont crispFont =
+            fontManager.get(pixelSize);
+
+        Label.LabelStyle style =
+            new Label.LabelStyle(
+                crispFont,
+                color
+            );
+
         Label label =
             new Label(
                 text,
-                skin
+                style
             );
 
         label.setColor(color);
-
-        label.setFontScale(scale);
 
         return label;
     }
@@ -1293,7 +1310,7 @@ public class UIManager implements Disposable {
 
         stage.dispose();
 
-        skin.dispose();
+        fontManager.dispose();
 
         shapes.dispose();
 
