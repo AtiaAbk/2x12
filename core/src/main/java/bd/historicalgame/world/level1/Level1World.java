@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.g3d.Attribute;
 import com.badlogic.gdx.graphics.g3d.Environment;
 import com.badlogic.gdx.graphics.g3d.Material;
@@ -70,12 +71,21 @@ public class Level1World implements Disposable {
 
     private final SpriteBatch spriteBatch;
     private final BitmapFont font;
+    private final ShapeRenderer hudShapes;
 
     // =========================================================
     // CAMERA
     // =========================================================
 
     private PerspectiveCamera camera;
+
+    private float cameraYaw = 0f;
+    private float cameraPitch = -12f;
+    private static final float DEFAULT_CAMERA_YAW = 0f;
+    private static final float DEFAULT_CAMERA_PITCH = -12f;
+    private static final float MOUSE_SENSITIVITY = 0.18f;
+    private static final float MIN_PITCH = -55f;
+    private static final float MAX_PITCH = 35f;
 
     private final Vector3 desiredCameraPosition =
         new Vector3();
@@ -86,25 +96,7 @@ public class Level1World implements Disposable {
     private static final float CAMERA_HEIGHT = 7.5f;
     private static final float CAMERA_DISTANCE = 13f;
 
-    private static final float CAMERA_DEFAULT_X = 0f;
-    private static final float CAMERA_DEFAULT_Y = 8f;
-    private static final float CAMERA_DEFAULT_Z = 23f;
-    private static final float CAMERA_DEFAULT_YAW = 0f;
-    private static final float CAMERA_DEFAULT_PITCH = -16.9f;
-
-    private static final float CAMERA_MOUSE_SENSITIVITY = 0.18f;
-    private static final float CAMERA_MIN_PITCH = -75f;
-    private static final float CAMERA_MAX_PITCH = 75f;
-
     private static final float CAMERA_SMOOTH = 5.5f;
-
-    private float cameraYaw = CAMERA_DEFAULT_YAW;
-    private float cameraPitch = CAMERA_DEFAULT_PITCH;
-
-    private final Vector3 cameraForward = new Vector3();
-    private final Vector3 cameraRight = new Vector3();
-
-    private boolean cameraWasReset = false;
 
     // =========================================================
     // PLAYER
@@ -264,6 +256,9 @@ public class Level1World implements Disposable {
         font =
             new BitmapFont();
 
+        hudShapes =
+            new ShapeRenderer();
+
         createLighting();
 
         createCamera();
@@ -329,12 +324,9 @@ public class Level1World implements Disposable {
                 height
             );
 
-        camera.near = GameConfig.CAMERA_NEAR;
-        camera.far = GameConfig.CAMERA_FAR;
-
+        camera.near = 0.1f;
+        camera.far = 300f;
         resetCamera();
-
-        Gdx.input.setCursorCatched(true);
     }
 
     // =========================================================
@@ -477,115 +469,99 @@ public class Level1World implements Disposable {
     // CAMERA FOLLOW
     // =========================================================
 
-    private void updateCameraInput() {
-
-        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
-            resetCamera();
-            updateCameraBasis();
-            return;
-        }
-
-        if (Gdx.input.isCursorCatched()) {
-            cameraYaw -=
-                Gdx.input.getDeltaX() * CAMERA_MOUSE_SENSITIVITY;
-
-            cameraPitch -=
-                Gdx.input.getDeltaY() * CAMERA_MOUSE_SENSITIVITY;
-
-            cameraPitch = MathUtils.clamp(
-                cameraPitch,
-                CAMERA_MIN_PITCH,
-                CAMERA_MAX_PITCH
-            );
-        }
-
-        updateCameraBasis();
-    }
-
-    private void resetCamera() {
-
-        cameraYaw = CAMERA_DEFAULT_YAW;
-        cameraPitch = CAMERA_DEFAULT_PITCH;
-
-        camera.position.set(
-            CAMERA_DEFAULT_X,
-            CAMERA_DEFAULT_Y,
-            CAMERA_DEFAULT_Z
-        );
-
-        camera.lookAt(
-            0f,
-            1f,
-            0f
-        );
-
-        camera.update();
-        cameraWasReset = true;
-    }
-
-    private void updateCameraBasis() {
-
-        float yawRadians =
-            cameraYaw * MathUtils.degreesToRadians;
-
-        cameraForward.set(
-            MathUtils.sin(yawRadians),
-            0f,
-            -MathUtils.cos(yawRadians)
-        ).nor();
-
-        cameraRight.set(
-            MathUtils.cos(yawRadians),
-            0f,
-            MathUtils.sin(yawRadians)
-        ).nor();
-    }
-
     private void updateCamera(float delta) {
 
-        if (player == null) {
+        if (player == null) return;
+
+        // R always restores the explicitly stored default camera state.
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            resetCamera();
             return;
         }
 
-        if (cameraWasReset) {
-            cameraWasReset = false;
-            return;
+        // Mouse controls orientation only. Movement keys never touch yaw/pitch.
+        if (!Gdx.input.isCursorCatched()) {
+            Gdx.input.setCursorCatched(true);
         }
 
-        cameraLookAt.set(
+        float mouseDX = Gdx.input.getDeltaX();
+        float mouseDY = Gdx.input.getDeltaY();
+
+        cameraYaw -= mouseDX * MOUSE_SENSITIVITY;
+        cameraPitch += mouseDY * MOUSE_SENSITIVITY;
+        cameraPitch = MathUtils.clamp(cameraPitch, MIN_PITCH, MAX_PITCH);
+        cameraYaw = ((cameraYaw + 180f) % 360f + 360f) % 360f - 180f;
+
+        float yawRad = cameraYaw * MathUtils.degreesToRadians;
+        Vector3 forward = new Vector3(
+            -MathUtils.sin(yawRad),
+            0f,
+            -MathUtils.cos(yawRad)
+        ).nor();
+        Vector3 right = new Vector3(
+            -forward.z,
+            0f,
+            forward.x
+        ).nor();
+
+        player.update(delta, forward, right);
+
+        float pitchRad = cameraPitch * MathUtils.degreesToRadians;
+        Vector3 lookDirection = new Vector3(
+            forward.x * MathUtils.cos(pitchRad),
+            MathUtils.sin(pitchRad),
+            forward.z * MathUtils.cos(pitchRad)
+        ).nor();
+
+        Vector3 target = new Vector3(
             player.getX(),
-            player.getY() + 1.1f,
+            player.getY() + 1.25f,
             player.getZ()
         );
 
-        float pitchRadians =
-            cameraPitch * MathUtils.degreesToRadians;
-
-        float horizontalDistance =
-            CAMERA_DISTANCE * MathUtils.cos(pitchRadians);
-
+        float horizontalDistance = CAMERA_DISTANCE * MathUtils.cos(pitchRad);
         desiredCameraPosition.set(
-            cameraLookAt.x - cameraForward.x * horizontalDistance,
-            cameraLookAt.y - CAMERA_DISTANCE * MathUtils.sin(pitchRadians),
-            cameraLookAt.z - cameraForward.z * horizontalDistance
+            target.x - forward.x * horizontalDistance,
+            target.y - lookDirection.y * CAMERA_DISTANCE,
+            target.z - forward.z * horizontalDistance
         );
 
-        float alpha =
-            1f -
-            (float)Math.exp(
-                -CAMERA_SMOOTH * delta
-            );
-
-        camera.position.lerp(
-            desiredCameraPosition,
-            alpha
-        );
-
-        Vector3 lookDirection =
-            cameraLookAt.cpy().sub(camera.position).nor();
-
-        camera.direction.set(lookDirection);
+        float alpha = 1f - (float)Math.exp(-CAMERA_SMOOTH * delta);
+        camera.position.lerp(desiredCameraPosition, alpha);
         camera.up.set(Vector3.Y);
+        camera.lookAt(target);
+        camera.update();
+    }
+
+    private void resetCamera() {
+        cameraYaw = DEFAULT_CAMERA_YAW;
+        cameraPitch = DEFAULT_CAMERA_PITCH;
+
+        float yawRad = cameraYaw * MathUtils.degreesToRadians;
+        Vector3 forward = new Vector3(
+            -MathUtils.sin(yawRad), 0f, -MathUtils.cos(yawRad)
+        ).nor();
+
+        Vector3 target = new Vector3(
+            player == null ? 0f : player.getX(),
+            player == null ? 1.25f : player.getY() + 1.25f,
+            player == null ? 0f : player.getZ()
+        );
+
+        float pitchRad = cameraPitch * MathUtils.degreesToRadians;
+        Vector3 lookDirection = new Vector3(
+            forward.x * MathUtils.cos(pitchRad),
+            MathUtils.sin(pitchRad),
+            forward.z * MathUtils.cos(pitchRad)
+        ).nor();
+
+        camera.position.set(
+            target.x - forward.x * CAMERA_DISTANCE * MathUtils.cos(pitchRad),
+            target.y - lookDirection.y * CAMERA_DISTANCE,
+            target.z - forward.z * CAMERA_DISTANCE * MathUtils.cos(pitchRad)
+        );
+        camera.up.set(Vector3.Y);
+        camera.lookAt(target);
         camera.update();
     }
 
@@ -1922,17 +1898,9 @@ public class Level1World implements Disposable {
 
         if (!levelCompleted) {
 
-            updateCameraInput();
-
-            player.update(
-                delta,
-                cameraForward,
-                cameraRight
-            );
+            updateCamera(delta);
 
             updatePlayerModel();
-
-            updateCamera(delta);
 
             updateObjectiveMarker();
 
@@ -2059,161 +2027,99 @@ public class Level1World implements Disposable {
 
     private void renderHUD() {
 
-        spriteBatch.begin();
+        float w = Gdx.graphics.getWidth();
+        float h = Gdx.graphics.getHeight();
+        float scale = Math.max(1f, h / 1080f);
 
-        /*
-         * Top mission panel.
-         */
-        font.getData().setScale(1.35f);
-
-        font.setColor(
-            Color.WHITE
-        );
-
-        String missionText;
-
-        if (levelCompleted) {
-
-            missionText =
-                "LEVEL 1 COMPLETE";
-
-        } else {
-
-            missionText =
-                "MISSION "
-                + (missionIndex + 1)
-                + "  •  "
-                + missionTitles[
-                    missionIndex
-                ];
-        }
-
-        font.draw(
-            spriteBatch,
-            missionText,
-            35f,
-            Gdx.graphics.getHeight() - 35f
-        );
-
-        font.getData().setScale(0.95f);
+        // High-resolution, screen-space HUD panels.
+        hudShapes.setProjectionMatrix(spriteBatch.getProjectionMatrix());
+        hudShapes.begin(ShapeRenderer.ShapeType.Filled);
+        hudShapes.setColor(0.025f, 0.035f, 0.045f, 0.88f);
+        hudShapes.rect(24f * scale, h - 166f * scale, 560f * scale, 142f * scale);
+        hudShapes.setColor(0.90f, 0.72f, 0.25f, 0.95f);
+        hudShapes.rect(24f * scale, h - 166f * scale, 5f * scale, 142f * scale);
 
         if (!levelCompleted) {
+            hudShapes.setColor(0.025f, 0.035f, 0.045f, 0.88f);
+            hudShapes.circle(w / 2f, 78f * scale, 46f * scale, 32);
+            hudShapes.setColor(0.90f, 0.72f, 0.25f, 0.95f);
+            hudShapes.circle(w / 2f, 78f * scale, 4f * scale, 20);
+        }
+        hudShapes.end();
 
-            font.draw(
-                spriteBatch,
-                missionDescriptions[
-                    missionIndex
-                ],
-                35f,
-                Gdx.graphics.getHeight() - 65f
-            );
+        spriteBatch.begin();
+        font.setColor(Color.WHITE);
 
-            Vector3 target =
-                missionTargets[
-                    missionIndex
-                ];
+        float titleScale = 1.45f * scale;
+        float bodyScale = 0.92f * scale;
+        float smallScale = 0.78f * scale;
 
-            float dx =
-                target.x -
-                player.getX();
+        font.getData().setScale(titleScale);
+        String title = levelCompleted
+            ? "LEVEL 1 COMPLETE"
+            : "MISSION " + (missionIndex + 1) + "  •  " + missionTitles[missionIndex];
+        font.draw(spriteBatch, title, 48f * scale, h - 50f * scale);
 
-            float dz =
-                target.z -
-                player.getZ();
+        font.getData().setScale(bodyScale);
+        if (!levelCompleted) {
+            font.draw(spriteBatch, missionDescriptions[missionIndex], 48f * scale, h - 84f * scale);
 
-            float distance =
-                (float)Math.sqrt(
-                    dx * dx +
-                    dz * dz
-                );
+            Vector3 target = missionTargets[missionIndex];
+            float dx = target.x - player.getX();
+            float dz = target.z - player.getZ();
+            float distance = (float)Math.sqrt(dx * dx + dz * dz);
+            font.draw(spriteBatch, String.format("OBJECTIVE   %.1f m", distance), 48f * scale, h - 119f * scale);
 
-            font.draw(
-                spriteBatch,
-                "DISTANCE: "
-                    + String.format(
-                        "%.1f m",
-                        distance
-                    ),
-                35f,
-                Gdx.graphics.getHeight() - 95f
-            );
+            font.getData().setScale(smallScale);
+            font.draw(spriteBatch, "NEXT: " + getDirection(dx, dz), 48f * scale, h - 145f * scale);
 
-            /*
-             * Direction.
-             */
-            String direction =
-                getDirection(
-                    dx,
-                    dz
-                );
-
-            font.draw(
-                spriteBatch,
-                "DIRECTION: "
-                    + direction,
-                35f,
-                Gdx.graphics.getHeight() - 125f
-            );
+            // Center compass/waypoint label.
+            font.getData().setScale(bodyScale);
+            String arrow = getCameraRelativeArrow(target);
+            float arrowWidth = font.getData().capHeight * 2f;
+            font.draw(spriteBatch, arrow, w / 2f - arrowWidth, 93f * scale);
+        } else {
+            font.getData().setScale(bodyScale);
+            font.draw(spriteBatch, "Campus exploration completed.", 48f * scale, h - 92f * scale);
+            font.getData().setScale(smallScale);
+            font.draw(spriteBatch, "Press ESC to open the pause menu.", 48f * scale, h - 125f * scale);
         }
 
-        // -----------------------------------------------------
-        // Controls
-        // -----------------------------------------------------
-
-        font.getData().setScale(0.8f);
-
-        font.draw(
-            spriteBatch,
-            "W A S D  Move",
-            30f,
-            45f
-        );
-
-        font.draw(
-            spriteBatch,
-            "ESC  Pause / Exit",
-            30f,
-            22f
-        );
-
-        // -----------------------------------------------------
-        // Mini map
-        // -----------------------------------------------------
+        font.getData().setScale(smallScale);
+        font.draw(spriteBatch, "W A S D  MOVE     MOUSE  CAMERA     R  RESET CAMERA     ESC  PAUSE", 28f * scale, 28f * scale);
 
         renderMiniMap();
 
-        // -----------------------------------------------------
-        // Completion message
-        // -----------------------------------------------------
-
         if (levelCompleted) {
-
-            font.getData().setScale(2f);
-
-            font.draw(
-                spriteBatch,
-                "LEVEL 1 COMPLETE",
-                Gdx.graphics.getWidth() / 2f - 130f,
-                Gdx.graphics.getHeight() / 2f + 30f
-            );
-
-            font.getData().setScale(1f);
-
-            font.draw(
-                spriteBatch,
-                "Return to the main menu or continue to Level 2.",
-                Gdx.graphics.getWidth() / 2f - 190f,
-                Gdx.graphics.getHeight() / 2f - 15f
-            );
+            font.getData().setScale(2.4f * scale);
+            String complete = "LEVEL 1 COMPLETE";
+            float tw = font.getRegion().getRegionWidth() * 0f;
+            font.draw(spriteBatch, complete, w / 2f - 190f * scale, h / 2f + 30f * scale);
+            font.getData().setScale(1.0f * scale);
+            font.draw(spriteBatch, "Campus exploration completed.", w / 2f - 150f * scale, h / 2f - 20f * scale);
         }
 
         spriteBatch.end();
-
-        font.setColor(
-            Color.WHITE
-        );
-
+        font.setColor(Color.WHITE);
         font.getData().setScale(1f);
+    }
+
+    private String getCameraRelativeArrow(Vector3 target) {
+        float dx = target.x - player.getX();
+        float dz = target.z - player.getZ();
+        if (Math.abs(dx) < 1.5f && Math.abs(dz) < 1.5f) return "◆";
+
+        float yawRad = cameraYaw * MathUtils.degreesToRadians;
+        Vector3 forward = new Vector3(-MathUtils.sin(yawRad), 0f, -MathUtils.cos(yawRad)).nor();
+        Vector3 right = new Vector3(-forward.z, 0f, forward.x).nor();
+        Vector3 toTarget = new Vector3(dx, 0f, dz).nor();
+
+        float forwardDot = forward.dot(toTarget);
+        float rightDot = right.dot(toTarget);
+        if (forwardDot > 0.70f) return "↑";
+        if (forwardDot < -0.70f) return "↓";
+        if (rightDot > 0f) return "→";
+        return "←";
     }
 
     // =========================================================
@@ -2370,6 +2276,10 @@ public class Level1World implements Disposable {
 
         if (font != null) {
             font.dispose();
+        }
+
+        if (hudShapes != null) {
+            hudShapes.dispose();
         }
 
         for (Model model : models) {
