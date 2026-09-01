@@ -1,70 +1,85 @@
 package bd.historicalgame;
 
+import bd.historicalgame.game.GameConfig;
 import bd.historicalgame.game.GameManager;
 import bd.historicalgame.game.GameState;
-import bd.historicalgame.ui.UIManager;
 import bd.historicalgame.world.World;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.utils.ScreenUtils;
 
 /**
- * Main application entry point for 2x12.
- *
- * UI and gameplay are intentionally separated:
- * - UIManager -> menus, HUD presentation and UI input
- * - World -> 3D world
- * - Player -> movement and camera interaction
- * - GameManager -> game state
+ * Main entry point of 2x12.
  */
 public class Main extends ApplicationAdapter {
 
+    private SpriteBatch batch;
+    private BitmapFont font;
+
     private GameManager gameManager;
     private World world;
-    private UIManager uiManager;
-
-    private GameState displayedState;
 
     private int selectedOption = 0;
 
-    private final String[] mainMenuOptions = {
+    /*
+     * Main menu options.
+     */
+    private final String[] menuOptions = {
         "PLAY",
         "SETTINGS",
         "EXIT"
     };
 
+    /*
+     * Pause menu options.
+     */
     private int pauseOption = 0;
 
     private final String[] pauseOptions = {
         "RESUME",
-        "SETTINGS",
         "EXIT TO MAIN MENU",
         "EXIT GAME"
     };
 
+    /*
+     * Exit confirmation.
+     */
     private boolean exitConfirmation = false;
-    private boolean exitToMainMenu = false;
+
+    private int exitSelection = 0;
+
+    private final String[] exitOptions = {
+        "YES",
+        "NO"
+    };
 
     @Override
     public void create() {
 
+        batch = new SpriteBatch();
+        font = new BitmapFont();
+
         gameManager = new GameManager();
 
+        // This project uses Gdx.input polling for keyboard/gameplay input.
+        // Keep the input processor free so no UI processor can steal keys.
+        Gdx.input.setInputProcessor(null);
+        Gdx.input.setCursorCatched(false);
+
         world = null;
-
-        uiManager = new UIManager();
-
-        displayedState = null;
-
-        syncUIState(true);
 
         System.out.println("================================");
         System.out.println("              2x12");
         System.out.println("      HISTORICAL ADVENTURE");
         System.out.println("================================");
         System.out.println(
-            "State: " + gameManager.getCurrentState()
+            "State: " +
+            gameManager.getCurrentState()
         );
     }
 
@@ -72,43 +87,21 @@ public class Main extends ApplicationAdapter {
     public void render() {
 
         float delta =
-            Math.min(
-                Gdx.graphics.getDeltaTime(),
-                0.05f
-            );
+            Gdx.graphics.getDeltaTime();
 
-        handleKeyboardInput();
-
-        consumeUIActions();
+        handleInput();
 
         GameState state =
             gameManager.getCurrentState();
 
-        syncUIState(false);
-
         /*
-         * Exit confirmation overlay.
+         * If exit confirmation is active,
+         * show confirmation over the current screen.
          */
-        if (
-            exitConfirmation ||
-            uiManager.isExitConfirmation()
-        ) {
+        if (exitConfirmation) {
 
-            renderBackground(state);
-
-            uiManager.render(delta);
-
-            return;
-        }
-
-        /*
-         * Settings overlay.
-         */
-        if (uiManager.isSettingsOpen()) {
-
-            renderBackground(state);
-
-            uiManager.render(delta);
+            renderCurrentBackground(state);
+            renderExitConfirmation();
 
             return;
         }
@@ -116,21 +109,11 @@ public class Main extends ApplicationAdapter {
         switch (state) {
 
             case MAIN_MENU:
-
-                uiManager.renderBackdrop(true);
-
-                uiManager.render(delta);
-
+                renderMainMenu();
                 break;
 
             case LEVEL1_INTRO:
-
-                if (world != null) {
-                    world.render();
-                }
-
-                uiManager.render(delta);
-
+                renderLevel1Intro();
                 break;
 
             case PLAYING:
@@ -138,11 +121,8 @@ public class Main extends ApplicationAdapter {
                 if (world != null) {
 
                     world.update(delta);
-
                     world.render();
                 }
-
-                uiManager.renderGameplayOverlay(delta);
 
                 break;
 
@@ -152,503 +132,372 @@ public class Main extends ApplicationAdapter {
                     world.render();
                 }
 
-                uiManager.render(delta);
-
+                renderPause();
                 break;
 
             default:
-
-                uiManager.renderBackdrop(true);
-
-                uiManager.render(delta);
-
+                renderMainMenu();
                 break;
         }
     }
 
-    /*
-     * =========================================================
-     * KEYBOARD INPUT
-     * =========================================================
-     */
+    // =========================================================
+    // INPUT
+    // =========================================================
 
-    private void handleKeyboardInput() {
-
-        /*
-         * EXIT CONFIRMATION
-         */
-        if (
-            exitConfirmation ||
-            uiManager.isExitConfirmation()
-        ) {
-
-            if (
-                Gdx.input.isKeyJustPressed(
-                    Input.Keys.ENTER
-                )
-            ) {
-
-                confirmExit();
-
-            } else if (
-                Gdx.input.isKeyJustPressed(
-                    Input.Keys.ESCAPE
-                )
-            ) {
-
-                cancelExit();
-            }
-
-            return;
-        }
-
-        /*
-         * SETTINGS
-         */
-        if (uiManager.isSettingsOpen()) {
-
-            if (
-                Gdx.input.isKeyJustPressed(
-                    Input.Keys.ESCAPE
-                )
-            ) {
-
-                closeSettings();
-            }
-
-            return;
-        }
+    private void handleInput() {
 
         GameState state =
             gameManager.getCurrentState();
 
-        if (
-            state ==
-            GameState.MAIN_MENU
-        ) {
+        // =====================================================
+        // EXIT CONFIRMATION
+        // =====================================================
 
-            handleMainMenuInput();
+        if (exitConfirmation) {
 
-        } else if (
-            state ==
-            GameState.LEVEL1_INTRO
-        ) {
-
-            handleIntroInput();
-
-        } else if (
-            state ==
-            GameState.PLAYING
-        ) {
-
-            handlePlayingInput();
-
-        } else if (
-            state ==
-            GameState.PAUSED
-        ) {
-
-            handlePauseInput();
-        }
-    }
-
-    /*
-     * =========================================================
-     * MAIN MENU
-     * =========================================================
-     */
-
-    private void handleMainMenuInput() {
-
-        if (
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.UP
-            )
-        ) {
-
-            selectedOption =
-                (
-                    selectedOption -
-                    1 +
-                    mainMenuOptions.length
-                )
-                %
-                mainMenuOptions.length;
-        }
-
-        if (
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.DOWN
-            )
-        ) {
-
-            selectedOption =
-                (
-                    selectedOption +
-                    1
-                )
-                %
-                mainMenuOptions.length;
-        }
-
-        if (
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.ENTER
-            )
-            ||
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.SPACE
-            )
-        ) {
-
-            activateMainMenuOption();
-        }
-
-        if (
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.ESCAPE
-            )
-        ) {
-
-            requestExit(false);
-        }
-    }
-
-    private void activateMainMenuOption() {
-
-        switch (selectedOption) {
-
-            case 0:
-
-                startLevel1();
-
-                break;
-
-            case 1:
-
-                openSettings();
-
-                break;
-
-            case 2:
-
-                requestExit(false);
-
-                break;
-
-            default:
-
-                break;
-        }
-    }
-
-    /*
-     * =========================================================
-     * INTRO
-     * =========================================================
-     */
-
-    private void handleIntroInput() {
-
-        if (
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.ENTER
-            )
-            ||
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.SPACE
-            )
-        ) {
-
-            gameManager.startPlaying();
-
-            uiManager.clearOverlayFlags();
-
-            setCursorForGameplay();
-
-            System.out.println(
-                "LEVEL 1 STARTED"
-            );
-        }
-
-        if (
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.Q
-            )
-            ||
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.ESCAPE
-            )
-        ) {
-
-            requestExit(false);
-        }
-    }
-
-    /*
-     * =========================================================
-     * PLAYING
-     * =========================================================
-     */
-
-    private void handlePlayingInput() {
-
-        if (
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.ESCAPE
-            )
-        ) {
-
-            pauseOption = 0;
-
-            gameManager.pauseGame();
-
-            setCursorForUI();
-        }
-
-        if (
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.Q
-            )
-        ) {
-
-            requestExit(false);
-        }
-    }
-
-    /*
-     * =========================================================
-     * PAUSE
-     * =========================================================
-     */
-
-    private void handlePauseInput() {
-
-        if (
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.ESCAPE
-            )
-        ) {
-
-            gameManager.resumeGame();
-
-            setCursorForGameplay();
+            handleExitConfirmation();
 
             return;
         }
 
-        if (
-            Gdx.input.isKeyJustPressed(
+        // =====================================================
+        // MAIN MENU
+        // =====================================================
+
+        if (state == GameState.MAIN_MENU) {
+
+            if (Gdx.input.isKeyJustPressed(
                 Input.Keys.UP
-            )
-        ) {
+            )) {
 
-            pauseOption =
-                (
-                    pauseOption -
-                    1 +
-                    pauseOptions.length
-                )
-                %
-                pauseOptions.length;
-        }
+                selectedOption--;
 
-        if (
-            Gdx.input.isKeyJustPressed(
+                if (selectedOption < 0) {
+
+                    selectedOption =
+                        menuOptions.length - 1;
+                }
+            }
+
+            if (Gdx.input.isKeyJustPressed(
                 Input.Keys.DOWN
-            )
-        ) {
+            )) {
 
-            pauseOption =
-                (
-                    pauseOption +
-                    1
-                )
-                %
-                pauseOptions.length;
-        }
+                selectedOption++;
 
-        if (
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.ENTER
-            )
-            ||
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.SPACE
-            )
-        ) {
+                if (selectedOption >=
+                    menuOptions.length) {
 
-            activatePauseOption();
-        }
+                    selectedOption = 0;
+                }
+            }
 
-        if (
-            Gdx.input.isKeyJustPressed(
+            if (isConfirmPressed()) {
+
+                if (selectedOption == 0) {
+
+                    startLevel1();
+                }
+
+                else if (selectedOption == 1) {
+
+                    System.out.println(
+                        "Settings selected."
+                    );
+                }
+
+                else if (selectedOption == 2) {
+
+                    requestExit();
+                }
+            }
+
+            /*
+             * Q or ESC from main menu
+             * asks for exit confirmation.
+             */
+            if (Gdx.input.isKeyJustPressed(
                 Input.Keys.Q
-            )
-        ) {
+            ) ||
+                Gdx.input.isKeyJustPressed(
+                    Input.Keys.ESCAPE
+                )) {
 
-            requestExit(false);
+                requestExit();
+            }
         }
-    }
 
-    private void activatePauseOption() {
+        // =====================================================
+        // LEVEL 1 INTRO
+        // =====================================================
 
-        switch (pauseOption) {
+        else if (state ==
+                 GameState.LEVEL1_INTRO) {
 
-            case 0:
+            if (isConfirmPressed()) {
 
-                gameManager.resumeGame();
-
-                setCursorForGameplay();
-
-                break;
-
-            case 1:
-
-                openSettings();
-
-                break;
-
-            case 2:
-
-                requestExit(true);
-
-                break;
-
-            case 3:
-
-                requestExit(false);
-
-                break;
-
-            default:
-
-                break;
-        }
-    }
-
-    /*
-     * =========================================================
-     * UI ACTIONS
-     * =========================================================
-     */
-
-    private void consumeUIActions() {
-
-        UIManager.Action action =
-            uiManager.consumeAction();
-
-        switch (action) {
-
-            case START_LEVEL1:
-
-                startLevel1();
-
-                break;
-
-            case START_PLAYING:
-
+                Gdx.input.setCursorCatched(true);
                 gameManager.startPlaying();
 
-                uiManager.clearOverlayFlags();
+                System.out.println(
+                    "LEVEL 1 STARTED"
+                );
+            }
 
-                setCursorForGameplay();
+            /*
+             * Q immediately requests exit.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.Q
+            )) {
 
-                break;
+                requestExit();
+            }
+        }
 
-            case RESUME:
+        // =====================================================
+        // PLAYING
+        // =====================================================
 
+        else if (state ==
+                 GameState.PLAYING) {
+
+            /*
+             * ESC opens pause menu.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.ESCAPE
+            )) {
+
+                pauseOption = 0;
+
+                Gdx.input.setCursorCatched(false);
+                gameManager.pauseGame();
+
+                return;
+            }
+
+            /*
+             * Q asks to exit.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.Q
+            )) {
+
+                requestExit();
+            }
+        }
+
+        // =====================================================
+        // PAUSED
+        // =====================================================
+
+        else if (state ==
+                 GameState.PAUSED) {
+
+            /*
+             * ESC resumes the game.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.ESCAPE
+            )) {
+
+                Gdx.input.setCursorCatched(true);
                 gameManager.resumeGame();
 
-                setCursorForGameplay();
+                return;
+            }
 
-                break;
+            /*
+             * UP.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.UP
+            )) {
 
-            case SETTINGS:
+                pauseOption--;
 
-                openSettings();
+                if (pauseOption < 0) {
 
-                break;
+                    pauseOption =
+                        pauseOptions.length - 1;
+                }
+            }
 
-            case CLOSE_SETTINGS:
+            /*
+             * DOWN.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.DOWN
+            )) {
 
-                closeSettings();
+                pauseOption++;
 
-                break;
+                if (pauseOption >=
+                    pauseOptions.length) {
 
-            case EXIT_TO_MAIN_MENU:
+                    pauseOption = 0;
+                }
+            }
 
-                requestExit(true);
+            /*
+             * ENTER.
+             */
+            if (isConfirmPressed()) {
 
-                break;
+                handlePauseSelection();
+            }
 
-            case EXIT_GAME:
+            /*
+             * Q asks for exit.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.Q
+            )) {
 
-                requestExit(false);
-
-                break;
-
-            case CONFIRM_EXIT:
-
-                confirmExit();
-
-                break;
-
-            case CANCEL_EXIT:
-
-                cancelExit();
-
-                break;
-
-            case NONE:
-
-            default:
-
-                break;
-        }
-    }
-
-    /*
-     * =========================================================
-     * STATE / UI
-     * =========================================================
-     */
-
-    private void syncUIState(boolean force) {
-
-        GameState state =
-            gameManager.getCurrentState();
-
-        if (
-            force ||
-            state != displayedState
-        ) {
-
-            displayedState = state;
-
-            uiManager.clearOverlayFlags();
-
-            uiManager.showState(state);
-
-            if (
-                state ==
-                GameState.PLAYING
-            ) {
-
-                setCursorForGameplay();
-
-            } else {
-
-                setCursorForUI();
+                requestExit();
             }
         }
     }
 
-    /*
-     * =========================================================
-     * LEVEL 1
-     * =========================================================
-     */
+    // =========================================================
+    // PAUSE MENU SELECTION
+    // =========================================================
+
+    private void handlePauseSelection() {
+
+        /*
+         * RESUME
+         */
+        if (pauseOption == 0) {
+
+            Gdx.input.setCursorCatched(true);
+            gameManager.resumeGame();
+        }
+
+        /*
+         * EXIT TO MAIN MENU
+         */
+        else if (pauseOption == 1) {
+
+            requestExitToMainMenu();
+        }
+
+        /*
+         * EXIT GAME
+         */
+        else if (pauseOption == 2) {
+
+            requestExit();
+        }
+    }
+
+    // =========================================================
+    // EXIT SYSTEM
+    // =========================================================
+
+    private void requestExit() {
+
+        exitConfirmation = true;
+        exitSelection = 1;
+
+        System.out.println(
+            "Exit confirmation opened."
+        );
+    }
+
+    private void requestExitToMainMenu() {
+
+        exitConfirmation = true;
+        exitSelection = 1;
+
+        System.out.println(
+            "Main menu confirmation opened."
+        );
+    }
+
+    private void handleExitConfirmation() {
+
+        /*
+         * LEFT / RIGHT
+         */
+        if (Gdx.input.isKeyJustPressed(
+            Input.Keys.LEFT
+        )) {
+
+            exitSelection--;
+
+            if (exitSelection < 0) {
+                exitSelection =
+                    exitOptions.length - 1;
+            }
+        }
+
+        if (Gdx.input.isKeyJustPressed(
+            Input.Keys.RIGHT
+        )) {
+
+            exitSelection++;
+
+            if (exitSelection >=
+                exitOptions.length) {
+
+                exitSelection = 0;
+            }
+        }
+
+        /*
+         * ENTER
+         */
+        if (isConfirmPressed()) {
+
+            /*
+             * YES
+             */
+            if (exitSelection == 0) {
+
+                exitGame();
+            }
+
+            /*
+             * NO
+             */
+            else {
+
+                exitConfirmation = false;
+            }
+        }
+
+        /*
+         * ESC cancels confirmation.
+         */
+        if (Gdx.input.isKeyJustPressed(
+            Input.Keys.ESCAPE
+        )) {
+
+            exitConfirmation = false;
+        }
+    }
+
+    private void exitGame() {
+
+        System.out.println(
+            "Exiting 2x12..."
+        );
+
+        if (world != null) {
+
+            world.dispose();
+            world = null;
+        }
+
+        Gdx.app.exit();
+    }
+
+    // =========================================================
+    // START LEVEL 1
+    // =========================================================
 
     private void startLevel1() {
 
@@ -663,187 +512,363 @@ public class Main extends ApplicationAdapter {
 
         world = new World();
 
+        Gdx.input.setCursorCatched(false);
+        Gdx.input.setInputProcessor(null);
+
         gameManager.startLevel1();
-
-        displayedState = null;
-
-        syncUIState(true);
     }
 
-    /*
-     * =========================================================
-     * SETTINGS
-     * =========================================================
-     */
+    // =========================================================
+    // BACKGROUND
+    // =========================================================
 
-    private void openSettings() {
-
-        uiManager.showSettings();
-
-        setCursorForUI();
-    }
-
-    private void closeSettings() {
-
-        uiManager.clearOverlayFlags();
-
-        uiManager.showState(
-            gameManager.getCurrentState()
-        );
-
-        setCursorForUI();
-    }
-
-    /*
-     * =========================================================
-     * EXIT
-     * =========================================================
-     */
-
-    private void requestExit(
-        boolean toMainMenu
-    ) {
-
-        exitToMainMenu =
-            toMainMenu;
-
-        exitConfirmation = true;
-
-        uiManager.showExitConfirmation(
-            gameManager.isMainMenu()
-        );
-
-        setCursorForUI();
-    }
-
-    private void confirmExit() {
-
-        exitConfirmation = false;
-
-        uiManager.clearOverlayFlags();
-
-        if (exitToMainMenu) {
-
-            if (world != null) {
-
-                world.dispose();
-
-                world = null;
-            }
-
-            exitToMainMenu = false;
-
-            gameManager.setState(
-                GameState.MAIN_MENU
-            );
-
-            displayedState = null;
-
-            syncUIState(true);
-
-            return;
-        }
-
-        if (world != null) {
-
-            world.dispose();
-
-            world = null;
-        }
-
-        Gdx.app.exit();
-    }
-
-    private void cancelExit() {
-
-        exitConfirmation = false;
-
-        exitToMainMenu = false;
-
-        uiManager.clearOverlayFlags();
-
-        syncUIState(true);
-    }
-
-    /*
-     * =========================================================
-     * BACKGROUND
-     * =========================================================
-     */
-
-    private void renderBackground(
+    private void renderCurrentBackground(
         GameState state
     ) {
 
-        if (
-            (
-                state ==
-                GameState.PLAYING
-                ||
-                state ==
-                GameState.PAUSED
-                ||
-                state ==
-                GameState.LEVEL1_INTRO
-            )
-            &&
-            world != null
-        ) {
+        if (state == GameState.PLAYING ||
+            state == GameState.PAUSED) {
 
-            world.render();
+            if (world != null) {
 
+                world.render();
+                return;
+            }
+        }
+
+        if (state == GameState.LEVEL1_INTRO) {
+
+            renderLevel1Intro();
             return;
         }
 
-        uiManager.renderBackdrop(true);
+        renderMainMenu();
     }
 
-    /*
-     * =========================================================
-     * INPUT MODE
-     * =========================================================
-     */
+    // =========================================================
+    // MAIN MENU
+    // =========================================================
 
-    private void setCursorForUI() {
+    private void renderMainMenu() {
 
-        uiManager.setInteractive(true);
-    }
+        ScreenUtils.clear(
+            0.02f,
+            0.02f,
+            0.03f,
+            1f
+        );
 
-    private void setCursorForGameplay() {
+        batch.begin();
 
-        uiManager.setInteractive(false);
-    }
+        font.getData().setScale(4f);
 
-    /*
-     * =========================================================
-     * RESIZE
-     * =========================================================
-     */
+        font.draw(
+            batch,
+            GameConfig.GAME_NAME,
+            100,
+            GameConfig.HEIGHT - 100
+        );
 
-    @Override
-    public void resize(
-        int width,
-        int height
-    ) {
+        font.getData().setScale(1.3f);
 
-        if (uiManager != null) {
+        font.draw(
+            batch,
+            "HISTORICAL ADVENTURE",
+            105,
+            GameConfig.HEIGHT - 150
+        );
 
-            uiManager
-                .getStage()
-                .getViewport()
-                .update(
-                    width,
-                    height,
-                    true
-                );
+        font.getData().setScale(1.6f);
+
+        float startY =
+            GameConfig.HEIGHT - 280;
+
+        for (int i = 0;
+             i < menuOptions.length;
+             i++) {
+
+            String prefix =
+                i == selectedOption
+                ? "> "
+                : "  ";
+
+            font.draw(
+                batch,
+                prefix + menuOptions[i],
+                120,
+                startY - i * 70
+            );
         }
+
+        font.getData().setScale(1f);
+
+        font.draw(
+            batch,
+            "UP / DOWN  Select",
+            100,
+            70
+        );
+
+        font.draw(
+            batch,
+            "ENTER  Confirm",
+            100,
+            40
+        );
+
+        font.draw(
+            batch,
+            "ESC / Q  Exit",
+            100,
+            15
+        );
+
+        batch.end();
     }
 
-    /*
-     * =========================================================
-     * DISPOSE
-     * =========================================================
+    // =========================================================
+    // LEVEL 1 INTRO
+    // =========================================================
+
+    private void renderLevel1Intro() {
+
+        ScreenUtils.clear(
+            0.04f,
+            0.05f,
+            0.06f,
+            1f
+        );
+
+        batch.begin();
+
+        font.getData().setScale(3f);
+
+        font.draw(
+            batch,
+            "LEVEL 1",
+            100,
+            GameConfig.HEIGHT - 100
+        );
+
+        font.getData().setScale(2f);
+
+        font.draw(
+            batch,
+            "WHERE IT ALL BEGAN",
+            100,
+            GameConfig.HEIGHT - 170
+        );
+
+        font.getData().setScale(1.3f);
+
+        font.draw(
+            batch,
+            "Mid-June 2024",
+            100,
+            GameConfig.HEIGHT - 260
+        );
+
+        font.getData().setScale(1.1f);
+
+        font.draw(
+            batch,
+            "A normal day is about to change.",
+            100,
+            GameConfig.HEIGHT - 320
+        );
+
+        font.draw(
+            batch,
+            "Explore the campus and discover what is happening.",
+            100,
+            GameConfig.HEIGHT - 355
+        );
+
+        font.getData().setScale(1f);
+
+        font.draw(
+            batch,
+            "Press ENTER to begin",
+            100,
+            100
+        );
+
+        font.draw(
+            batch,
+            "Press Q to exit",
+            100,
+            60
+        );
+
+        batch.end();
+    }
+
+    // =========================================================
+    // PAUSE
+    // =========================================================
+
+    private void renderPause() {
+
+        /*
+         * Dark transparent overlay.
+         */
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+
+        batch.begin();
+
+        font.getData().setScale(3f);
+
+        font.draw(
+            batch,
+            "PAUSED",
+            GameConfig.WIDTH / 2f - 80,
+            GameConfig.HEIGHT / 2f + 150
+        );
+
+        font.getData().setScale(1.5f);
+
+        for (int i = 0;
+             i < pauseOptions.length;
+             i++) {
+
+            String prefix =
+                i == pauseOption
+                ? "> "
+                : "  ";
+
+            font.draw(
+                batch,
+                prefix + pauseOptions[i],
+                GameConfig.WIDTH / 2f - 130,
+                GameConfig.HEIGHT / 2f + 50 - i * 60
+            );
+        }
+
+        font.getData().setScale(1f);
+
+        font.draw(
+            batch,
+            "UP / DOWN  Select",
+            GameConfig.WIDTH / 2f - 100,
+            80
+        );
+
+        font.draw(
+            batch,
+            "ENTER  Confirm",
+            GameConfig.WIDTH / 2f - 100,
+            50
+        );
+
+        font.draw(
+            batch,
+            "ESC  Resume",
+            GameConfig.WIDTH / 2f - 100,
+            20
+        );
+
+        batch.end();
+
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+    }
+
+    // =========================================================
+    // EXIT CONFIRMATION
+    // =========================================================
+
+    private void renderExitConfirmation() {
+
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+
+        batch.begin();
+
+        font.getData().setScale(2.5f);
+
+        font.draw(
+            batch,
+            "EXIT GAME?",
+            GameConfig.WIDTH / 2f - 100,
+            GameConfig.HEIGHT / 2f + 100
+        );
+
+        font.getData().setScale(1.3f);
+
+        font.draw(
+            batch,
+            "Are you sure you want to exit?",
+            GameConfig.WIDTH / 2f - 160,
+            GameConfig.HEIGHT / 2f + 40
+        );
+
+        font.getData().setScale(1.6f);
+
+        String yes =
+            exitSelection == 0
+            ? "> YES"
+            : "  YES";
+
+        String no =
+            exitSelection == 1
+            ? "> NO"
+            : "  NO";
+
+        font.draw(
+            batch,
+            yes,
+            GameConfig.WIDTH / 2f - 100,
+            GameConfig.HEIGHT / 2f - 50
+        );
+
+        font.draw(
+            batch,
+            no,
+            GameConfig.WIDTH / 2f + 30,
+            GameConfig.HEIGHT / 2f - 50
+        );
+
+        font.getData().setScale(1f);
+
+        font.draw(
+            batch,
+            "LEFT / RIGHT  Select",
+            GameConfig.WIDTH / 2f - 100,
+            70
+        );
+
+        font.draw(
+            batch,
+            "ENTER  Confirm",
+            GameConfig.WIDTH / 2f - 100,
+            40
+        );
+
+        font.draw(
+            batch,
+            "ESC  Cancel",
+            GameConfig.WIDTH / 2f - 100,
+            15
+        );
+
+        batch.end();
+
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+    }
+
+    // =========================================================
+    // KEYBOARD CONFIRMATION
+    // =========================================================
+
+    /**
+     * ENTER and SPACE both work as the universal confirm/select key.
      */
+    private boolean isConfirmPressed() {
+        return Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
+            || Gdx.input.isKeyJustPressed(Input.Keys.SPACE);
+    }
+
+    // =========================================================
+    // DISPOSE
+    // =========================================================
 
     @Override
     public void dispose() {
@@ -851,15 +876,15 @@ public class Main extends ApplicationAdapter {
         if (world != null) {
 
             world.dispose();
-
             world = null;
         }
 
-        if (uiManager != null) {
+        if (batch != null) {
+            batch.dispose();
+        }
 
-            uiManager.dispose();
-
-            uiManager = null;
+        if (font != null) {
+            font.dispose();
         }
     }
 }

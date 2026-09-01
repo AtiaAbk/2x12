@@ -1867,11 +1867,11 @@ public class Level1World implements Disposable {
          * Right academic building.
          */
         player.addCollision(
-            12f,
+            17f,
             -6.5f,
             12f,
             7f,
-            TSC_ROOF_Y
+            4.5f
         );
 
         /*
@@ -1886,14 +1886,14 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * TSC.
+         * TSC. The roof is a real jumpable platform.
          */
         player.addCollision(
             12f,
             -6.5f,
             12f,
             7f,
-            4.5f
+            TSC_ROOF_Y
         );
     }
 
