@@ -1,6 +1,5 @@
 package bd.historicalgame;
 
-import bd.historicalgame.game.GameConfig;
 import bd.historicalgame.game.GameManager;
 import bd.historicalgame.game.GameState;
 import bd.historicalgame.ui.UIManager;
@@ -9,33 +8,80 @@ import bd.historicalgame.world.World;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.utils.ScreenUtils;
 
 /**
  * Main entry point of 2x12.
  *
- * Gameplay input remains polling-based exactly as before. The UI layer only
- * adds visual rendering and mouse hit-testing, so it never replaces the
- * gameplay InputProcessor.
+ * Rendering and interaction for every non-gameplay screen
+ * (main menu, intro, pause, settings, exit confirmation) is
+ * delegated to {@link UIManager}, which owns the Stage, the
+ * cinematic dark/gold/cyan visual theme, and mouse click
+ * handling. This class keeps ownership of the high-level
+ * state machine and keyboard shortcuts, and routes both
+ * mouse clicks (via UIManager.Action) and keyboard presses
+ * through the same transition methods so the two input
+ * paths can never disagree about game state.
  */
 public class Main extends ApplicationAdapter {
 
+    private UIManager uiManager;
+
     private GameManager gameManager;
     private World world;
-    private UIManager ui;
 
+    /*
+     * Main menu options (keyboard navigation index).
+     */
     private int selectedOption = 0;
+
+    private final String[] menuOptions = {
+        "PLAY",
+        "SETTINGS",
+        "EXIT"
+    };
+
+    /*
+     * Pause menu options (keyboard navigation index).
+     *
+     * Order matches the buttons UIManager draws for the
+     * pause screen: RESUME, SETTINGS, EXIT TO MAIN MENU,
+     * EXIT GAME.
+     */
     private int pauseOption = 0;
-    private int exitSelection = 1;
+
+    private final String[] pauseOptions = {
+        "RESUME",
+        "SETTINGS",
+        "EXIT TO MAIN MENU",
+        "EXIT GAME"
+    };
+
+    /*
+     * Exit confirmation.
+     */
+    private boolean exitConfirmation = false;
+
+    /*
+     * True when the open confirmation dialog was requested
+     * from the pause menu's "EXIT TO MAIN MENU" option, so
+     * confirming returns to the main menu instead of quitting.
+     */
+    private boolean exitToMainMenu = false;
+
+    private int exitSelection = 0;
+
+    private final String[] exitOptions = {
+        "YES",
+        "NO"
+    };
 
     @Override
     public void create() {
-        ui = new UIManager();
+
         gameManager = new GameManager();
 
-        // Keep the original polling-based gameplay input model.
-        Gdx.input.setInputProcessor(null);
-        Gdx.input.setCursorCatched(false);
+        uiManager = new UIManager();
 
         world = null;
 
@@ -43,309 +89,662 @@ public class Main extends ApplicationAdapter {
         System.out.println("              2x12");
         System.out.println("      HISTORICAL ADVENTURE");
         System.out.println("================================");
-        System.out.println("State: " + gameManager.getCurrentState());
+        System.out.println(
+            "State: " +
+            gameManager.getCurrentState()
+        );
     }
 
     @Override
     public void render() {
-        float delta = Math.min(Gdx.graphics.getDeltaTime(), GameConfig.MAX_DELTA);
-        ui.update(delta);
+
+        float delta =
+            Gdx.graphics.getDeltaTime();
+
         handleInput();
 
-        GameState state = gameManager.getCurrentState();
+        processUIActions();
 
-        if (ui.isExitConfirmation()) {
-            renderBase(state);
-            ui.renderExitConfirmation(exitSelection, ui.isExitFromMainMenu());
-            return;
+        GameState state =
+            gameManager.getCurrentState();
+
+        /*
+         * Keep the UIManager screen in sync with the current
+         * game state every frame. showState() is a cheap no-op
+         * once it is already showing the right screen, so this
+         * is safe to call continuously. It is skipped while an
+         * overlay (settings / exit confirmation) is open so the
+         * overlay isn't clobbered mid-display.
+         */
+        if (!exitConfirmation &&
+            !uiManager.isSettingsOpen()) {
+
+            uiManager.showState(state);
         }
 
-        if (ui.isSettingsOpen()) {
-            renderBase(state);
-            ui.renderSettings();
+        /*
+         * If exit confirmation is active,
+         * show confirmation over the current screen.
+         */
+        if (exitConfirmation) {
+
+            renderCurrentBackground(state);
+
+            uiManager.renderBackdrop(true);
+            uiManager.render(delta);
+
             return;
         }
 
         switch (state) {
+
             case MAIN_MENU:
-                ui.renderMainMenu(selectedOption);
-                break;
             case LEVEL1_INTRO:
-                ui.renderIntro();
+
+                renderCurrentBackground(state);
+
+                uiManager.renderBackdrop(false);
+                uiManager.render(delta);
+
                 break;
+
             case PLAYING:
+
                 if (world != null) {
+
                     world.update(delta);
                     world.render();
                 }
+
                 break;
+
             case PAUSED:
-                if (world != null) world.render();
-                ui.renderPause(pauseOption);
+
+                if (world != null) {
+                    world.render();
+                }
+
+                uiManager.render(delta);
                 break;
+
             default:
-                // Keep legacy fallback behavior.
-                ui.renderMainMenu(selectedOption);
+
+                renderCurrentBackground(state);
+
+                uiManager.renderBackdrop(false);
+                uiManager.render(delta);
+
                 break;
-        }
-    }
-
-    private void renderBase(GameState state) {
-        if (state == GameState.PLAYING || state == GameState.PAUSED) {
-            if (world != null) {
-                world.render();
-                return;
-            }
-        }
-
-        if (state == GameState.LEVEL1_INTRO) {
-            ui.renderIntro();
-        } else {
-            ui.renderMainMenu(selectedOption);
         }
     }
 
     // =========================================================
-    // INPUT
+    // UI ACTIONS (MOUSE)
+    // =========================================================
+
+    /**
+     * Consumes at most one pending click-driven action per
+     * frame from the UIManager and routes it through the same
+     * methods keyboard input uses, so mouse and keyboard can
+     * never leave the game in inconsistent states.
+     */
+    private void processUIActions() {
+
+        UIManager.Action action =
+            uiManager.consumeAction();
+
+        switch (action) {
+
+            case START_LEVEL1:
+                startLevel1();
+                break;
+
+            case START_PLAYING:
+
+                gameManager.startPlaying();
+
+                System.out.println(
+                    "LEVEL 1 STARTED"
+                );
+
+                break;
+
+            case RESUME:
+                gameManager.resumeGame();
+                break;
+
+            case SETTINGS:
+                uiManager.showSettings();
+                break;
+
+            case CLOSE_SETTINGS:
+
+                uiManager.showState(
+                    gameManager.getCurrentState()
+                );
+
+                break;
+
+            case EXIT_TO_MAIN_MENU:
+                requestExitToMainMenu();
+                break;
+
+            case EXIT_GAME:
+                requestExit();
+                break;
+
+            case CONFIRM_EXIT:
+                confirmExit();
+                break;
+
+            case CANCEL_EXIT:
+                exitConfirmation = false;
+                break;
+
+            case NONE:
+            default:
+                break;
+        }
+    }
+
+    // =========================================================
+    // INPUT (KEYBOARD)
     // =========================================================
 
     private void handleInput() {
-        GameState state = gameManager.getCurrentState();
 
-        // -----------------------------------------------------
+        GameState state =
+            gameManager.getCurrentState();
+
+        // =====================================================
         // EXIT CONFIRMATION
-        // -----------------------------------------------------
-        if (ui.isExitConfirmation()) {
-            int mouseChoice = ui.getExitButtonAtMouse();
+        // =====================================================
 
-            if (mouseChoice >= 0) {
-                exitSelection = mouseChoice;
-                if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-                    confirmExitChoice();
-                    return;
-                }
-            }
+        if (exitConfirmation) {
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT)) {
-                exitSelection = exitSelection == 0 ? 1 : 0;
-            }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT)) {
-                exitSelection = exitSelection == 1 ? 0 : 1;
-            }
-            if (isConfirmPressed()) {
-                confirmExitChoice();
-                return;
-            }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-                ui.closeOverlay();
-            }
+            handleExitConfirmation();
+
             return;
         }
 
-        // -----------------------------------------------------
-        // SETTINGS
-        // -----------------------------------------------------
-        if (ui.isSettingsOpen()) {
-            if (ui.isSettingsBackAtMouse() &&
-                Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-                ui.closeOverlay();
-                return;
+        // =====================================================
+        // SETTINGS OVERLAY
+        // =====================================================
+
+        if (uiManager.isSettingsOpen()) {
+
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.ESCAPE
+            )) {
+
+                uiManager.showState(state);
             }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) ||
-                Gdx.input.isKeyJustPressed(Input.Keys.BACK)) {
-                ui.closeOverlay();
-            }
+
             return;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // MAIN MENU
-        // -----------------------------------------------------
+        // =====================================================
+
         if (state == GameState.MAIN_MENU) {
-            int mouseIndex = ui.getMainButtonAtMouse();
-            if (mouseIndex >= 0) {
-                selectedOption = mouseIndex;
-                if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-                    activateMainOption(selectedOption);
-                    return;
+
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.UP
+            )) {
+
+                selectedOption--;
+
+                if (selectedOption < 0) {
+
+                    selectedOption =
+                        menuOptions.length - 1;
                 }
             }
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
-                selectedOption = (selectedOption + 2) % 3;
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.DOWN
+            )) {
+
+                selectedOption++;
+
+                if (selectedOption >=
+                    menuOptions.length) {
+
+                    selectedOption = 0;
+                }
             }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
-                selectedOption = (selectedOption + 1) % 3;
-            }
+
             if (isConfirmPressed()) {
-                activateMainOption(selectedOption);
-                return;
+
+                if (selectedOption == 0) {
+
+                    startLevel1();
+                }
+
+                else if (selectedOption == 1) {
+
+                    uiManager.showSettings();
+                }
+
+                else if (selectedOption == 2) {
+
+                    requestExit();
+                }
             }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.Q) ||
-                Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-                requestExit(true);
+
+            /*
+             * Q or ESC from main menu
+             * asks for exit confirmation.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.Q
+            ) ||
+                Gdx.input.isKeyJustPressed(
+                    Input.Keys.ESCAPE
+                )) {
+
+                requestExit();
             }
-            return;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // LEVEL 1 INTRO
-        // -----------------------------------------------------
-        if (state == GameState.LEVEL1_INTRO) {
+        // =====================================================
+
+        else if (state ==
+                 GameState.LEVEL1_INTRO) {
+
             if (isConfirmPressed()) {
-                Gdx.input.setCursorCatched(true);
+
                 gameManager.startPlaying();
-                return;
+
+                System.out.println(
+                    "LEVEL 1 STARTED"
+                );
             }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.Q) ||
-                Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-                requestExit(false);
+
+            /*
+             * Q immediately requests exit.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.Q
+            )) {
+
+                requestExit();
             }
-            return;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // PLAYING
-        // -----------------------------------------------------
-        if (state == GameState.PLAYING) {
-            // Preserve existing behavior: ESC pauses, Q asks to exit.
-            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+        // =====================================================
+
+        else if (state ==
+                 GameState.PLAYING) {
+
+            /*
+             * ESC opens pause menu.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.ESCAPE
+            )) {
+
                 pauseOption = 0;
-                Gdx.input.setCursorCatched(false);
+
                 gameManager.pauseGame();
+
                 return;
             }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.Q)) {
-                requestExit(false);
+
+            /*
+             * Q asks to exit.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.Q
+            )) {
+
+                requestExit();
             }
-            return;
         }
 
-        // -----------------------------------------------------
+        // =====================================================
         // PAUSED
-        // -----------------------------------------------------
-        if (state == GameState.PAUSED) {
-            int mouseIndex = ui.getPauseButtonAtMouse();
-            if (mouseIndex >= 0) {
-                pauseOption = mouseIndex;
-                if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-                    handlePauseSelection();
-                    return;
+        // =====================================================
+
+        else if (state ==
+                 GameState.PAUSED) {
+
+            /*
+             * ESC resumes the game.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.ESCAPE
+            )) {
+
+                gameManager.resumeGame();
+
+                return;
+            }
+
+            /*
+             * UP.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.UP
+            )) {
+
+                pauseOption--;
+
+                if (pauseOption < 0) {
+
+                    pauseOption =
+                        pauseOptions.length - 1;
                 }
             }
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-                Gdx.input.setCursorCatched(true);
-                gameManager.resumeGame();
-                return;
+            /*
+             * DOWN.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.DOWN
+            )) {
+
+                pauseOption++;
+
+                if (pauseOption >=
+                    pauseOptions.length) {
+
+                    pauseOption = 0;
+                }
             }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.UP)) {
-                pauseOption = (pauseOption + 3) % 4;
-            }
-            if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN)) {
-                pauseOption = (pauseOption + 1) % 4;
-            }
+
+            /*
+             * ENTER.
+             */
             if (isConfirmPressed()) {
+
                 handlePauseSelection();
             }
+
+            /*
+             * Q asks for exit.
+             */
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.Q
+            )) {
+
+                requestExit();
+            }
         }
     }
 
-    private void activateMainOption(int option) {
-        if (option == 0) {
-            startLevel1();
-        } else if (option == 1) {
-            ui.setSettingsContext(false);
-        } else {
-            requestExit(true);
-        }
-    }
+    // =========================================================
+    // PAUSE MENU SELECTION
+    // =========================================================
 
     private void handlePauseSelection() {
+
+        /*
+         * RESUME
+         */
         if (pauseOption == 0) {
-            Gdx.input.setCursorCatched(true);
+
             gameManager.resumeGame();
-        } else if (pauseOption == 1) {
-            ui.setSettingsContext(true);
-            Gdx.input.setCursorCatched(false);
-        } else if (pauseOption == 2) {
-            requestExitFromPauseToMainMenu();
-        } else if (pauseOption == 3) {
-            requestExit(false);
+        }
+
+        /*
+         * SETTINGS
+         */
+        else if (pauseOption == 1) {
+
+            uiManager.showSettings();
+        }
+
+        /*
+         * EXIT TO MAIN MENU
+         */
+        else if (pauseOption == 2) {
+
+            requestExitToMainMenu();
+        }
+
+        /*
+         * EXIT GAME
+         */
+        else if (pauseOption == 3) {
+
+            requestExit();
         }
     }
 
-    private void requestExit(boolean fromMainMenu) {
+    // =========================================================
+    // EXIT SYSTEM
+    // =========================================================
+
+    private void requestExit() {
+
+        exitToMainMenu = false;
+
+        exitConfirmation = true;
         exitSelection = 1;
-        ui.setExitContext(fromMainMenu);
-        Gdx.input.setCursorCatched(false);
+
+        uiManager.showExitConfirmation(false);
+
+        System.out.println(
+            "Exit confirmation opened."
+        );
     }
 
-    private void requestExitFromPauseToMainMenu() {
+    private void requestExitToMainMenu() {
+
+        exitToMainMenu = true;
+
+        exitConfirmation = true;
         exitSelection = 1;
-        // The distinction is handled by Main after confirmation.
-        ui.setExitContext(false);
-        // A paused exit-to-menu is tracked by a dedicated field below.
-        exitToMainMenuAfterConfirm = true;
-        Gdx.input.setCursorCatched(false);
+
+        uiManager.showExitConfirmation(true);
+
+        System.out.println(
+            "Main menu confirmation opened."
+        );
     }
 
-    private boolean exitToMainMenuAfterConfirm = false;
+    private void handleExitConfirmation() {
 
-    private void confirmExitChoice() {
-        if (exitSelection == 1) {
-            exitToMainMenuAfterConfirm = false;
-            ui.closeOverlay();
-            return;
-        }
+        /*
+         * LEFT / RIGHT
+         */
+        if (Gdx.input.isKeyJustPressed(
+            Input.Keys.LEFT
+        )) {
 
-        if (exitToMainMenuAfterConfirm) {
-            exitToMainMenuAfterConfirm = false;
-            if (world != null) {
-                world.dispose();
-                world = null;
+            exitSelection--;
+
+            if (exitSelection < 0) {
+                exitSelection =
+                    exitOptions.length - 1;
             }
-            gameManager.setState(GameState.MAIN_MENU);
-            selectedOption = 0;
-            Gdx.input.setCursorCatched(false);
-            ui.closeOverlay();
-            return;
         }
 
-        exitGame();
+        if (Gdx.input.isKeyJustPressed(
+            Input.Keys.RIGHT
+        )) {
+
+            exitSelection++;
+
+            if (exitSelection >=
+                exitOptions.length) {
+
+                exitSelection = 0;
+            }
+        }
+
+        /*
+         * ENTER / SPACE
+         */
+        if (isConfirmPressed()) {
+
+            /*
+             * YES
+             */
+            if (exitSelection == 0) {
+
+                confirmExit();
+            }
+
+            /*
+             * NO
+             */
+            else {
+
+                exitConfirmation = false;
+            }
+        }
+
+        /*
+         * ESC cancels confirmation.
+         */
+        if (Gdx.input.isKeyJustPressed(
+            Input.Keys.ESCAPE
+        )) {
+
+            exitConfirmation = false;
+        }
     }
 
-    private void startLevel1() {
-        System.out.println("Loading Level 1...");
+    /**
+     * Confirms whichever exit flow is currently open: returns
+     * to the main menu if the dialog came from "EXIT TO MAIN
+     * MENU", otherwise quits the application.
+     */
+    private void confirmExit() {
 
-        if (world != null) world.dispose();
-        world = new World();
+        exitConfirmation = false;
 
-        Gdx.input.setCursorCatched(false);
-        Gdx.input.setInputProcessor(null);
-        gameManager.startLevel1();
+        if (exitToMainMenu) {
+
+            returnToMainMenu();
+
+        } else {
+
+            exitGame();
+        }
+    }
+
+    private void returnToMainMenu() {
+
+        System.out.println(
+            "Returning to main menu..."
+        );
+
+        if (world != null) {
+
+            world.dispose();
+            world = null;
+        }
+
+        gameManager.setState(
+            GameState.MAIN_MENU
+        );
+
+        selectedOption = 0;
     }
 
     private void exitGame() {
-        System.out.println("Exiting 2x12...");
+
+        System.out.println(
+            "Exiting 2x12..."
+        );
+
         if (world != null) {
+
             world.dispose();
             world = null;
         }
+
         Gdx.app.exit();
     }
 
-    private boolean isConfirmPressed() {
-        return Gdx.input.isKeyJustPressed(Input.Keys.ENTER) ||
-            Gdx.input.isKeyJustPressed(Input.Keys.SPACE);
+    // =========================================================
+    // START LEVEL 1
+    // =========================================================
+
+    private void startLevel1() {
+
+        System.out.println(
+            "Loading Level 1..."
+        );
+
+        if (world != null) {
+
+            world.dispose();
+        }
+
+        world = new World();
+
+        gameManager.startLevel1();
     }
+
+    // =========================================================
+    // BACKGROUND
+    // =========================================================
+
+    /**
+     * Renders whatever should sit behind the current UIManager
+     * screen: the live 3D world for PLAYING / PAUSED, or a
+     * plain cleared color for every menu-style state (the
+     * UIManager backdrop is painted on top of this).
+     */
+    private void renderCurrentBackground(
+        GameState state
+    ) {
+
+        if (state == GameState.PLAYING ||
+            state == GameState.PAUSED) {
+
+            if (world != null) {
+
+                world.render();
+            }
+
+            return;
+        }
+
+        ScreenUtils.clear(
+            0.02f,
+            0.02f,
+            0.03f,
+            1f
+        );
+    }
+
+    // =========================================================
+    // KEYBOARD CONFIRMATION
+    // =========================================================
+
+    /**
+     * ENTER and SPACE both work as the universal confirm/select key.
+     */
+    private boolean isConfirmPressed() {
+        return Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
+            || Gdx.input.isKeyJustPressed(Input.Keys.SPACE);
+    }
+
+    // =========================================================
+    // DISPOSE
+    // =========================================================
 
     @Override
     public void dispose() {
+
         if (world != null) {
+
             world.dispose();
             world = null;
         }
-        if (ui != null) ui.dispose();
+
+        if (uiManager != null) {
+            uiManager.dispose();
+        }
     }
 }

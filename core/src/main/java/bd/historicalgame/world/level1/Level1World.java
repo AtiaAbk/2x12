@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.g3d.Attribute;
@@ -2124,9 +2125,19 @@ public class Level1World implements Disposable {
         }
 
         font.getData().setScale(smallScale);
-        font.draw(spriteBatch, "W A S D  MOVE     SHIFT / SPACE  JUMP     MOUSE  CAMERA     R  RESET     ESC  PAUSE", 28f * scale, 28f * scale);
 
-        renderMiniMap();
+        String controlsHint =
+            "W A S D  MOVE     SHIFT / SPACE  JUMP     MOUSE  CAMERA     R  RESET     ESC  PAUSE";
+
+        GlyphLayout controlsLayout =
+            new GlyphLayout(font, controlsHint);
+
+        font.draw(
+            spriteBatch,
+            controlsHint,
+            w - controlsLayout.width - 28f * scale,
+            28f * scale
+        );
 
         if (levelCompleted) {
             font.getData().setScale(2.4f * scale);
@@ -2140,6 +2151,13 @@ public class Level1World implements Disposable {
         spriteBatch.end();
         font.setColor(Color.WHITE);
         font.getData().setScale(1f);
+
+        /*
+         * Self-contained: manages its own ShapeRenderer and
+         * SpriteBatch begin/end pairs, so it must run after
+         * the main HUD batch above has been closed.
+         */
+        renderMiniMap();
     }
 
     private String getCameraRelativeArrow(Vector3 target) {
@@ -2195,82 +2213,174 @@ public class Level1World implements Disposable {
     }
 
     // =========================================================
-    // MINI MAP
+    // MINI MAP (RADAR)
     // =========================================================
 
+    private static final float MINIMAP_RADIUS = 76f;
+    private static final float MINIMAP_RANGE = 32f;
+
+    /**
+     * Circular radar in the top-right corner. Rotates with the
+     * camera so the player's current facing direction always
+     * points to the top of the disc (same convention as the
+     * on-screen directional arrow), with a dot per mission
+     * target and a highlighted dot for the current objective.
+     */
     private void renderMiniMap() {
 
+        float w = Gdx.graphics.getWidth();
+        float h = Gdx.graphics.getHeight();
+
+        float scale = Math.max(1f, h / 1080f);
+
+        float radius = MINIMAP_RADIUS * scale;
+        float margin = 26f * scale;
+
+        float centerX = w - margin - radius;
+        float centerY = h - margin - radius;
+
         /*
-         * Simple text-based mini-map.
-         *
-         * Kept lightweight so it works without textures.
+         * Same forward/right convention as
+         * getCameraRelativeArrow(), so the radar and the
+         * on-screen compass arrow always agree.
          */
-        float x =
-            Gdx.graphics.getWidth()
-                - 230f;
+        float yawRad =
+            cameraYaw * MathUtils.degreesToRadians;
 
-        float y =
-            Gdx.graphics.getHeight()
-                - 35f;
+        float forwardX = -MathUtils.sin(yawRad);
+        float forwardZ = -MathUtils.cos(yawRad);
 
-        font.getData().setScale(0.85f);
+        float rightX = -forwardZ;
+        float rightZ = forwardX;
+
+        hudShapes.setProjectionMatrix(
+            spriteBatch.getProjectionMatrix()
+        );
+
+        hudShapes.begin(ShapeRenderer.ShapeType.Filled);
+
+        /*
+         * Ring border: a slightly larger gold disc behind a
+         * smaller dark disc, leaving a thin gold rim visible.
+         */
+        hudShapes.setColor(0.90f, 0.72f, 0.25f, 0.55f);
+        hudShapes.circle(centerX, centerY, radius + 3f * scale, 48);
+
+        hudShapes.setColor(0.03f, 0.045f, 0.055f, 0.90f);
+        hudShapes.circle(centerX, centerY, radius, 48);
+
+        /*
+         * Mission markers.
+         */
+        for (int i = 0; i < missionTargets.length; i++) {
+
+            Vector3 target = missionTargets[i];
+
+            float dx = target.x - player.getX();
+            float dz = target.z - player.getZ();
+
+            float worldDist =
+                (float) Math.sqrt(dx * dx + dz * dz);
+
+            float mapX;
+            float mapY;
+
+            if (worldDist < 0.001f) {
+
+                mapX = 0f;
+                mapY = 0f;
+
+            } else {
+
+                float clampedDist =
+                    Math.min(worldDist, MINIMAP_RANGE);
+
+                float mapDist =
+                    (clampedDist / MINIMAP_RANGE)
+                        * (radius - 8f * scale);
+
+                float mapRight =
+                    (dx * rightX + dz * rightZ) / worldDist;
+
+                float mapUp =
+                    (dx * forwardX + dz * forwardZ) / worldDist;
+
+                mapX = mapRight * mapDist;
+                mapY = mapUp * mapDist;
+            }
+
+            boolean isCurrent =
+                i == missionIndex && !levelCompleted;
+
+            boolean isPast =
+                i < missionIndex;
+
+            if (isCurrent) {
+                hudShapes.setColor(0.90f, 0.72f, 0.25f, 1f);
+            } else if (isPast) {
+                hudShapes.setColor(0.6f, 0.6f, 0.6f, 0.55f);
+            } else {
+                hudShapes.setColor(0.6f, 0.6f, 0.6f, 0.35f);
+            }
+
+            hudShapes.circle(
+                centerX + mapX,
+                centerY + mapY,
+                (isCurrent ? 5f : 3.5f) * scale,
+                16
+            );
+        }
+
+        /*
+         * Player marker, fixed at the radar's center. Since the
+         * radar rotates with the camera, this always points up.
+         */
+        hudShapes.setColor(0.94f, 0.96f, 0.98f, 1f);
+
+        float triSize = 7f * scale;
+
+        hudShapes.triangle(
+            centerX, centerY + triSize,
+            centerX - triSize * 0.65f, centerY - triSize * 0.55f,
+            centerX + triSize * 0.65f, centerY - triSize * 0.55f
+        );
+
+        hudShapes.end();
+
+        /*
+         * Crisp thin ring outline over the filled discs.
+         */
+        hudShapes.begin(ShapeRenderer.ShapeType.Line);
+        hudShapes.setColor(0.90f, 0.72f, 0.25f, 0.9f);
+        hudShapes.circle(centerX, centerY, radius, 48);
+        hudShapes.end();
+
+        String label =
+            levelCompleted
+                ? "CAMPUS MAP"
+                : missionTitles[
+                    Math.min(missionIndex, missionTitles.length - 1)
+                ];
+
+        font.getData().setScale(0.62f * scale);
+        font.setColor(Color.valueOf("E8BC55"));
+
+        GlyphLayout labelLayout =
+            new GlyphLayout(font, label);
+
+        spriteBatch.begin();
 
         font.draw(
             spriteBatch,
-            "CAMPUS MAP",
-            x,
-            y
+            label,
+            centerX - labelLayout.width / 2f,
+            centerY - radius - 10f * scale
         );
 
-        font.getData().setScale(0.68f);
+        spriteBatch.end();
 
-        font.draw(
-            spriteBatch,
-            "[ CURZON HALL ]",
-            x,
-            y - 28f
-        );
-
-        font.draw(
-            spriteBatch,
-            "       │",
-            x,
-            y - 48f
-        );
-
-        font.draw(
-            spriteBatch,
-            "  LIBRARY ─ LAWN ─ TSC",
-            x,
-            y - 68f
-        );
-
-        font.draw(
-            spriteBatch,
-            "       │",
-            x,
-            y - 88f
-        );
-
-        font.draw(
-            spriteBatch,
-            "    [ MAIN GATE ]",
-            x,
-            y - 108f
-        );
-
-        font.draw(
-            spriteBatch,
-            "Objective: "
-                + missionTitles[
-                    Math.min(
-                        missionIndex,
-                        missionTitles.length - 1
-                    )
-                ],
-            x,
-            y - 140f
-        );
+        font.setColor(Color.WHITE);
+        font.getData().setScale(1f);
     }
 
     // =========================================================
