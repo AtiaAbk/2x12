@@ -12,99 +12,61 @@ import com.badlogic.gdx.Input;
 /**
  * Main application entry point for 2x12.
  *
- * Gameplay/world logic remains in the existing World/Level1World classes.
- * UIManager owns the presentation layer and menu mouse interaction.
+ * UI and gameplay are intentionally separated:
+ * - UIManager -> menus, HUD presentation and UI input
+ * - World -> 3D world
+ * - Player -> movement and camera interaction
+ * - GameManager -> game state
  */
 public class Main extends ApplicationAdapter {
 
     private GameManager gameManager;
-
     private World world;
-
     private UIManager uiManager;
 
     private GameState displayedState;
 
-    // =========================================================
-    // MAIN MENU
-    // =========================================================
-
     private int selectedOption = 0;
 
-    private final String[] menuOptions = {
+    private final String[] mainMenuOptions = {
         "PLAY",
         "SETTINGS",
         "EXIT"
     };
 
-    // =========================================================
-    // PAUSE MENU
-    // =========================================================
-
     private int pauseOption = 0;
 
     private final String[] pauseOptions = {
         "RESUME",
+        "SETTINGS",
         "EXIT TO MAIN MENU",
         "EXIT GAME"
     };
 
-    // =========================================================
-    // EXIT CONFIRMATION
-    // =========================================================
-
-    private boolean exitConfirmation =
-        false;
-
-    private boolean exitToMainMenu =
-        false;
-
-    // =========================================================
-    // CREATE
-    // =========================================================
+    private boolean exitConfirmation = false;
+    private boolean exitToMainMenu = false;
 
     @Override
     public void create() {
 
-        gameManager =
-            new GameManager();
+        gameManager = new GameManager();
 
-        world =
-            null;
+        world = null;
 
-        uiManager =
-            new UIManager();
+        uiManager = new UIManager();
 
-        displayedState =
-            null;
+        displayedState = null;
 
         syncUIState(true);
 
+        System.out.println("================================");
+        System.out.println("              2x12");
+        System.out.println("      HISTORICAL ADVENTURE");
+        System.out.println("================================");
         System.out.println(
-            "================================"
-        );
-
-        System.out.println(
-            "              2x12"
-        );
-
-        System.out.println(
-            "      HISTORICAL ADVENTURE"
-        );
-
-        System.out.println(
-            "================================"
-        );
-
-        System.out.println(
-            "State: " +
-            gameManager.getCurrentState()
+            "State: " + gameManager.getCurrentState()
         );
     }
-
-    // =========================================================
-    // RENDER
-    // =========================================================
 
     @Override
     public void render() {
@@ -115,7 +77,7 @@ public class Main extends ApplicationAdapter {
                 0.05f
             );
 
-        handleInput();
+        handleKeyboardInput();
 
         consumeUIActions();
 
@@ -124,77 +86,50 @@ public class Main extends ApplicationAdapter {
 
         syncUIState(false);
 
-        // -----------------------------------------------------
-        // EXIT CONFIRMATION
-        // -----------------------------------------------------
-
+        /*
+         * Exit confirmation overlay.
+         */
         if (
             exitConfirmation ||
             uiManager.isExitConfirmation()
         ) {
 
-            renderCurrentBackground(
-                state
-            );
+            renderBackground(state);
 
-            uiManager.render(
-                0.016f
-            );
+            uiManager.render(delta);
 
             return;
         }
 
-        // -----------------------------------------------------
-        // SETTINGS
-        // -----------------------------------------------------
+        /*
+         * Settings overlay.
+         */
+        if (uiManager.isSettingsOpen()) {
 
-        if (
-            uiManager.isSettingsOpen()
-        ) {
+            renderBackground(state);
 
-            renderCurrentBackground(
-                state
-            );
-
-            uiManager.render(
-                delta
-            );
+            uiManager.render(delta);
 
             return;
         }
-
-        // -----------------------------------------------------
-        // GAME STATE
-        // -----------------------------------------------------
 
         switch (state) {
 
             case MAIN_MENU:
 
-                uiManager.renderBackdrop(
-                    true
-                );
+                uiManager.renderBackdrop(true);
 
-                uiManager.render(
-                    delta
-                );
+                uiManager.render(delta);
 
                 break;
 
             case LEVEL1_INTRO:
 
-                /*
-                 * The already-created Level 1 world is shown
-                 * behind the cinematic introduction panel.
-                 */
                 if (world != null) {
-
                     world.render();
                 }
 
-                uiManager.render(
-                    delta
-                );
+                uiManager.render(delta);
 
                 break;
 
@@ -202,63 +137,46 @@ public class Main extends ApplicationAdapter {
 
                 if (world != null) {
 
-                    world.update(
-                        delta
-                    );
+                    world.update(delta);
 
                     world.render();
                 }
 
-                /*
-                 * Reserved for future gameplay values.
-                 * The existing Level1World HUD remains active.
-                 */
-                uiManager.renderGameplayOverlay(
-                    delta
-                );
+                uiManager.renderGameplayOverlay(delta);
 
                 break;
 
             case PAUSED:
 
-                /*
-                 * Keep the 3D world visible behind the pause UI.
-                 */
                 if (world != null) {
-
                     world.render();
                 }
 
-                uiManager.render(
-                    delta
-                );
+                uiManager.render(delta);
 
                 break;
 
             default:
 
-                uiManager.renderBackdrop(
-                    true
-                );
+                uiManager.renderBackdrop(true);
 
-                uiManager.render(
-                    delta
-                );
+                uiManager.render(delta);
 
                 break;
         }
     }
 
-    // =========================================================
-    // INPUT
-    // =========================================================
+    /*
+     * =========================================================
+     * KEYBOARD INPUT
+     * =========================================================
+     */
 
-    private void handleInput() {
+    private void handleKeyboardInput() {
 
-        // -----------------------------------------------------
-        // EXIT CONFIRMATION
-        // -----------------------------------------------------
-
+        /*
+         * EXIT CONFIRMATION
+         */
         if (
             exitConfirmation ||
             uiManager.isExitConfirmation()
@@ -284,13 +202,10 @@ public class Main extends ApplicationAdapter {
             return;
         }
 
-        // -----------------------------------------------------
-        // SETTINGS
-        // -----------------------------------------------------
-
-        if (
-            uiManager.isSettingsOpen()
-        ) {
+        /*
+         * SETTINGS
+         */
+        if (uiManager.isSettingsOpen()) {
 
             if (
                 Gdx.input.isKeyJustPressed(
@@ -307,10 +222,6 @@ public class Main extends ApplicationAdapter {
         GameState state =
             gameManager.getCurrentState();
 
-        // -----------------------------------------------------
-        // MAIN MENU
-        // -----------------------------------------------------
-
         if (
             state ==
             GameState.MAIN_MENU
@@ -318,39 +229,21 @@ public class Main extends ApplicationAdapter {
 
             handleMainMenuInput();
 
-        }
-
-        // -----------------------------------------------------
-        // LEVEL 1 INTRO
-        // -----------------------------------------------------
-
-        else if (
+        } else if (
             state ==
             GameState.LEVEL1_INTRO
         ) {
 
             handleIntroInput();
 
-        }
-
-        // -----------------------------------------------------
-        // PLAYING
-        // -----------------------------------------------------
-
-        else if (
+        } else if (
             state ==
             GameState.PLAYING
         ) {
 
             handlePlayingInput();
 
-        }
-
-        // -----------------------------------------------------
-        // PAUSED
-        // -----------------------------------------------------
-
-        else if (
+        } else if (
             state ==
             GameState.PAUSED
         ) {
@@ -359,9 +252,11 @@ public class Main extends ApplicationAdapter {
         }
     }
 
-    // =========================================================
-    // MAIN MENU INPUT
-    // =========================================================
+    /*
+     * =========================================================
+     * MAIN MENU
+     * =========================================================
+     */
 
     private void handleMainMenuInput() {
 
@@ -375,9 +270,10 @@ public class Main extends ApplicationAdapter {
                 (
                     selectedOption -
                     1 +
-                    menuOptions.length
-                ) %
-                menuOptions.length;
+                    mainMenuOptions.length
+                )
+                %
+                mainMenuOptions.length;
         }
 
         if (
@@ -390,56 +286,67 @@ public class Main extends ApplicationAdapter {
                 (
                     selectedOption +
                     1
-                ) %
-                menuOptions.length;
+                )
+                %
+                mainMenuOptions.length;
         }
 
         if (
             Gdx.input.isKeyJustPressed(
                 Input.Keys.ENTER
             )
+            ||
+            Gdx.input.isKeyJustPressed(
+                Input.Keys.SPACE
+            )
         ) {
 
-            if (
-                selectedOption ==
-                0
-            ) {
-
-                startLevel1();
-
-            } else if (
-                selectedOption ==
-                1
-            ) {
-
-                openSettings();
-
-            } else {
-
-                requestExit(
-                    false
-                );
-            }
+            activateMainMenuOption();
         }
 
         if (
             Gdx.input.isKeyJustPressed(
                 Input.Keys.ESCAPE
-            ) ||
-            Gdx.input.isKeyJustPressed(
-                Input.Keys.Q
             )
         ) {
 
-            requestExit(
-                false
-            );
+            requestExit(false);
         }
     }
 
-    // =========================================================
-    // INTRO INPUT
-    // =========================================================
+    private void activateMainMenuOption() {
+
+        switch (selectedOption) {
+
+            case 0:
+
+                startLevel1();
+
+                break;
+
+            case 1:
+
+                openSettings();
+
+                break;
+
+            case 2:
+
+                requestExit(false);
+
+                break;
+
+            default:
+
+                break;
+        }
+    }
+
+    /*
+     * =========================================================
+     * INTRO
+     * =========================================================
+     */
 
     private void handleIntroInput() {
 
@@ -447,11 +354,17 @@ public class Main extends ApplicationAdapter {
             Gdx.input.isKeyJustPressed(
                 Input.Keys.ENTER
             )
+            ||
+            Gdx.input.isKeyJustPressed(
+                Input.Keys.SPACE
+            )
         ) {
 
             gameManager.startPlaying();
 
             uiManager.clearOverlayFlags();
+
+            setCursorForGameplay();
 
             System.out.println(
                 "LEVEL 1 STARTED"
@@ -461,41 +374,36 @@ public class Main extends ApplicationAdapter {
         if (
             Gdx.input.isKeyJustPressed(
                 Input.Keys.Q
-            ) ||
+            )
+            ||
             Gdx.input.isKeyJustPressed(
                 Input.Keys.ESCAPE
             )
         ) {
 
-            requestExit(
-                false
-            );
+            requestExit(false);
         }
     }
 
-    // =========================================================
-    // PLAYING INPUT
-    // =========================================================
+    /*
+     * =========================================================
+     * PLAYING
+     * =========================================================
+     */
 
     private void handlePlayingInput() {
 
-        /*
-         * ESC opens the cinematic pause menu.
-         */
         if (
             Gdx.input.isKeyJustPressed(
                 Input.Keys.ESCAPE
             )
         ) {
 
-            pauseOption =
-                0;
+            pauseOption = 0;
 
             gameManager.pauseGame();
 
             setCursorForUI();
-
-            return;
         }
 
         if (
@@ -504,21 +412,18 @@ public class Main extends ApplicationAdapter {
             )
         ) {
 
-            requestExit(
-                false
-            );
+            requestExit(false);
         }
     }
 
-    // =========================================================
-    // PAUSE INPUT
-    // =========================================================
+    /*
+     * =========================================================
+     * PAUSE
+     * =========================================================
+     */
 
     private void handlePauseInput() {
 
-        /*
-         * ESC resumes the game.
-         */
         if (
             Gdx.input.isKeyJustPressed(
                 Input.Keys.ESCAPE
@@ -543,7 +448,8 @@ public class Main extends ApplicationAdapter {
                     pauseOption -
                     1 +
                     pauseOptions.length
-                ) %
+                )
+                %
                 pauseOptions.length;
         }
 
@@ -557,7 +463,8 @@ public class Main extends ApplicationAdapter {
                 (
                     pauseOption +
                     1
-                ) %
+                )
+                %
                 pauseOptions.length;
         }
 
@@ -565,32 +472,13 @@ public class Main extends ApplicationAdapter {
             Gdx.input.isKeyJustPressed(
                 Input.Keys.ENTER
             )
+            ||
+            Gdx.input.isKeyJustPressed(
+                Input.Keys.SPACE
+            )
         ) {
 
-            if (
-                pauseOption ==
-                0
-            ) {
-
-                gameManager.resumeGame();
-
-                setCursorForGameplay();
-
-            } else if (
-                pauseOption ==
-                1
-            ) {
-
-                requestExit(
-                    true
-                );
-
-            } else {
-
-                requestExit(
-                    false
-                );
-            }
+            activatePauseOption();
         }
 
         if (
@@ -599,15 +487,51 @@ public class Main extends ApplicationAdapter {
             )
         ) {
 
-            requestExit(
-                false
-            );
+            requestExit(false);
         }
     }
 
-    // =========================================================
-    // UI ACTIONS
-    // =========================================================
+    private void activatePauseOption() {
+
+        switch (pauseOption) {
+
+            case 0:
+
+                gameManager.resumeGame();
+
+                setCursorForGameplay();
+
+                break;
+
+            case 1:
+
+                openSettings();
+
+                break;
+
+            case 2:
+
+                requestExit(true);
+
+                break;
+
+            case 3:
+
+                requestExit(false);
+
+                break;
+
+            default:
+
+                break;
+        }
+    }
+
+    /*
+     * =========================================================
+     * UI ACTIONS
+     * =========================================================
+     */
 
     private void consumeUIActions() {
 
@@ -618,54 +542,25 @@ public class Main extends ApplicationAdapter {
 
             case START_LEVEL1:
 
-                if (
-                    gameManager.isMainMenu()
-                ) {
-
-                    startLevel1();
-                }
+                startLevel1();
 
                 break;
 
             case START_PLAYING:
 
-                if (
-                    gameManager.isLevel1Intro()
-                ) {
+                gameManager.startPlaying();
 
-                    gameManager.startPlaying();
+                uiManager.clearOverlayFlags();
 
-                    uiManager.clearOverlayFlags();
-                }
+                setCursorForGameplay();
 
                 break;
 
             case RESUME:
 
-                if (
-                    gameManager.isPaused()
-                ) {
+                gameManager.resumeGame();
 
-                    gameManager.resumeGame();
-
-                    setCursorForGameplay();
-                }
-
-                break;
-
-            case EXIT_TO_MAIN_MENU:
-
-                requestExit(
-                    true
-                );
-
-                break;
-
-            case EXIT_GAME:
-
-                requestExit(
-                    false
-                );
+                setCursorForGameplay();
 
                 break;
 
@@ -678,6 +573,18 @@ public class Main extends ApplicationAdapter {
             case CLOSE_SETTINGS:
 
                 closeSettings();
+
+                break;
+
+            case EXIT_TO_MAIN_MENU:
+
+                requestExit(true);
+
+                break;
+
+            case EXIT_GAME:
+
+                requestExit(false);
 
                 break;
 
@@ -701,13 +608,13 @@ public class Main extends ApplicationAdapter {
         }
     }
 
-    // =========================================================
-    // UI STATE SYNCHRONIZATION
-    // =========================================================
+    /*
+     * =========================================================
+     * STATE / UI
+     * =========================================================
+     */
 
-    private void syncUIState(
-        boolean force
-    ) {
+    private void syncUIState(boolean force) {
 
         GameState state =
             gameManager.getCurrentState();
@@ -717,14 +624,11 @@ public class Main extends ApplicationAdapter {
             state != displayedState
         ) {
 
-            displayedState =
-                state;
+            displayedState = state;
 
             uiManager.clearOverlayFlags();
 
-            uiManager.showState(
-                state
-            );
+            uiManager.showState(state);
 
             if (
                 state ==
@@ -740,9 +644,11 @@ public class Main extends ApplicationAdapter {
         }
     }
 
-    // =========================================================
-    // LEVEL 1
-    // =========================================================
+    /*
+     * =========================================================
+     * LEVEL 1
+     * =========================================================
+     */
 
     private void startLevel1() {
 
@@ -755,25 +661,20 @@ public class Main extends ApplicationAdapter {
             world.dispose();
         }
 
-        /*
-         * Preserve the existing World/Level1World implementation.
-         */
-        world =
-            new World();
+        world = new World();
 
         gameManager.startLevel1();
 
-        displayedState =
-            null;
+        displayedState = null;
 
-        syncUIState(
-            true
-        );
+        syncUIState(true);
     }
 
-    // =========================================================
-    // SETTINGS
-    // =========================================================
+    /*
+     * =========================================================
+     * SETTINGS
+     * =========================================================
+     */
 
     private void openSettings() {
 
@@ -793,9 +694,11 @@ public class Main extends ApplicationAdapter {
         setCursorForUI();
     }
 
-    // =========================================================
-    // EXIT REQUEST
-    // =========================================================
+    /*
+     * =========================================================
+     * EXIT
+     * =========================================================
+     */
 
     private void requestExit(
         boolean toMainMenu
@@ -804,8 +707,7 @@ public class Main extends ApplicationAdapter {
         exitToMainMenu =
             toMainMenu;
 
-        exitConfirmation =
-            true;
+        exitConfirmation = true;
 
         uiManager.showExitConfirmation(
             gameManager.isMainMenu()
@@ -814,20 +716,11 @@ public class Main extends ApplicationAdapter {
         setCursorForUI();
     }
 
-    // =========================================================
-    // CONFIRM EXIT
-    // =========================================================
-
     private void confirmExit() {
 
-        exitConfirmation =
-            false;
+        exitConfirmation = false;
 
         uiManager.clearOverlayFlags();
-
-        // -----------------------------------------------------
-        // EXIT TO MAIN MENU
-        // -----------------------------------------------------
 
         if (exitToMainMenu) {
 
@@ -835,66 +728,50 @@ public class Main extends ApplicationAdapter {
 
                 world.dispose();
 
-                world =
-                    null;
+                world = null;
             }
 
-            exitToMainMenu =
-                false;
+            exitToMainMenu = false;
 
             gameManager.setState(
                 GameState.MAIN_MENU
             );
 
-            displayedState =
-                null;
+            displayedState = null;
 
-            syncUIState(
-                true
-            );
+            syncUIState(true);
 
             return;
         }
-
-        // -----------------------------------------------------
-        // EXIT APPLICATION
-        // -----------------------------------------------------
 
         if (world != null) {
 
             world.dispose();
 
-            world =
-                null;
+            world = null;
         }
 
         Gdx.app.exit();
     }
 
-    // =========================================================
-    // CANCEL EXIT
-    // =========================================================
-
     private void cancelExit() {
 
-        exitConfirmation =
-            false;
+        exitConfirmation = false;
 
-        exitToMainMenu =
-            false;
+        exitToMainMenu = false;
 
         uiManager.clearOverlayFlags();
 
-        syncUIState(
-            true
-        );
+        syncUIState(true);
     }
 
-    // =========================================================
-    // BACKGROUND
-    // =========================================================
+    /*
+     * =========================================================
+     * BACKGROUND
+     * =========================================================
+     */
 
-    private void renderCurrentBackground(
+    private void renderBackground(
         GameState state
     ) {
 
@@ -918,32 +795,30 @@ public class Main extends ApplicationAdapter {
             return;
         }
 
-        uiManager.renderBackdrop(
-            true
-        );
+        uiManager.renderBackdrop(true);
     }
 
-    // =========================================================
-    // CURSOR / INPUT MODE
-    // =========================================================
+    /*
+     * =========================================================
+     * INPUT MODE
+     * =========================================================
+     */
 
     private void setCursorForUI() {
 
-        uiManager.setInteractive(
-            true
-        );
+        uiManager.setInteractive(true);
     }
 
     private void setCursorForGameplay() {
 
-        uiManager.setInteractive(
-            false
-        );
+        uiManager.setInteractive(false);
     }
 
-    // =========================================================
-    // RESIZE
-    // =========================================================
+    /*
+     * =========================================================
+     * RESIZE
+     * =========================================================
+     */
 
     @Override
     public void resize(
@@ -964,9 +839,11 @@ public class Main extends ApplicationAdapter {
         }
     }
 
-    // =========================================================
-    // DISPOSE
-    // =========================================================
+    /*
+     * =========================================================
+     * DISPOSE
+     * =========================================================
+     */
 
     @Override
     public void dispose() {
@@ -975,16 +852,14 @@ public class Main extends ApplicationAdapter {
 
             world.dispose();
 
-            world =
-                null;
+            world = null;
         }
 
         if (uiManager != null) {
 
             uiManager.dispose();
 
-            uiManager =
-                null;
+            uiManager = null;
         }
     }
 }

@@ -188,6 +188,12 @@ public class Level1World implements Disposable {
 
     private static final float MISSION_DISTANCE = 3.2f;
 
+    // TSC roof: the building body is 4.5f high and the roof slab
+    // raises the walkable top to approximately 4.825f.
+    private static final float TSC_ROOF_Y = 4.825f;
+    private static final float TSC_PLAYER_CENTER_Y = TSC_ROOF_Y + 0.75f;
+    private static final float TSC_ROOF_TOLERANCE = 0.30f;
+
     // =========================================================
     // OBJECTIVE MARKER
     // =========================================================
@@ -432,15 +438,17 @@ public class Level1World implements Disposable {
                 ? MathUtils.sin(totalTime * 10f) * 0.035f
                 : 0f;
 
+        float y = player.getY();
+
         playerBody.transform.setToTranslation(
             x,
-            1.0f + bob,
+            y + bob,
             z
         );
 
         playerHead.transform.setToTranslation(
             x,
-            2.05f + bob,
+            y + 1.05f + bob,
             z
         );
 
@@ -1803,8 +1811,13 @@ public class Level1World implements Disposable {
                 missionIndex
             ];
 
+        float baseY =
+            missionIndex == 2
+                ? 6.35f
+                : 3.8f;
+
         float y =
-            3.8f +
+            baseY +
             MathUtils.sin(
                 totalTime * 3f
             ) * 0.5f;
@@ -1835,7 +1848,8 @@ public class Level1World implements Disposable {
             -11f,
             -16.5f,
             22f,
-            5f
+            5f,
+            6.0f
         );
 
         /*
@@ -1845,17 +1859,19 @@ public class Level1World implements Disposable {
             -23f,
             -6.5f,
             12f,
-            7f
+            7f,
+            4.5f
         );
 
         /*
          * Right academic building.
          */
         player.addCollision(
-            17f,
+            12f,
             -6.5f,
             12f,
-            7f
+            7f,
+            TSC_ROOF_Y
         );
 
         /*
@@ -1865,7 +1881,8 @@ public class Level1World implements Disposable {
             -24f,
             -6.5f,
             12f,
-            7f
+            7f,
+            4.5f
         );
 
         /*
@@ -1875,7 +1892,8 @@ public class Level1World implements Disposable {
             12f,
             -6.5f,
             12f,
-            7f
+            7f,
+            4.5f
         );
     }
 
@@ -1933,11 +1951,19 @@ public class Level1World implements Disposable {
                 dz * dz
             );
 
-        if (
-            distance <=
-            MISSION_DISTANCE
-        ) {
+        boolean insideObjectiveRadius =
+            distance <= MISSION_DISTANCE;
 
+        boolean tscRoofReached =
+            missionIndex != 2
+            || (
+                player.isGrounded()
+                &&
+                player.getY() >=
+                    TSC_PLAYER_CENTER_Y - TSC_ROOF_TOLERANCE
+            );
+
+        if (insideObjectiveRadius && tscRoofReached) {
             completeCurrentMission();
         }
     }
@@ -2073,6 +2099,18 @@ public class Level1World implements Disposable {
             font.getData().setScale(smallScale);
             font.draw(spriteBatch, "NEXT: " + getDirection(dx, dz), 48f * scale, h - 145f * scale);
 
+            if (missionIndex == 2) {
+                font.getData().setScale(0.74f * scale);
+                font.setColor(Color.valueOf("6FE7E0"));
+                font.draw(
+                    spriteBatch,
+                    "ROOFTOP OBJECTIVE  •  SHIFT / SPACE TO JUMP",
+                    48f * scale,
+                    h - 170f * scale
+                );
+                font.setColor(Color.WHITE);
+            }
+
             // Center compass/waypoint label.
             font.getData().setScale(bodyScale);
             String arrow = getCameraRelativeArrow(target);
@@ -2086,7 +2124,7 @@ public class Level1World implements Disposable {
         }
 
         font.getData().setScale(smallScale);
-        font.draw(spriteBatch, "W A S D  MOVE     MOUSE  CAMERA     R  RESET CAMERA     ESC  PAUSE", 28f * scale, 28f * scale);
+        font.draw(spriteBatch, "W A S D  MOVE     SHIFT / SPACE  JUMP     MOUSE  CAMERA     R  RESET     ESC  PAUSE", 28f * scale, 28f * scale);
 
         renderMiniMap();
 

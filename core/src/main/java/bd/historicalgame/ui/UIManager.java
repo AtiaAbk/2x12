@@ -24,12 +24,15 @@ import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 /**
- * Presentation-focused UI layer for 2x12.
+ * Cinematic UI system for 2x12.
  *
- * The existing gameplay/world systems remain responsible for 3D rendering,
- * player movement, camera control and missions.
- *
- * This class owns the screen-space presentation and menu interaction.
+ * Designed to provide:
+ * - premium dark surfaces
+ * - gold/cyan accent treatment
+ * - keyboard and mouse interaction
+ * - smooth transitions
+ * - responsive desktop layout
+ * - minimal visual obstruction
  */
 public class UIManager implements Disposable {
 
@@ -38,82 +41,89 @@ public class UIManager implements Disposable {
         NONE,
 
         START_LEVEL1,
-
         START_PLAYING,
 
         RESUME,
 
-        EXIT_TO_MAIN_MENU,
-
-        EXIT_GAME,
-
         SETTINGS,
-
         CLOSE_SETTINGS,
 
-        CONFIRM_EXIT,
+        EXIT_TO_MAIN_MENU,
+        EXIT_GAME,
 
+        CONFIRM_EXIT,
         CANCEL_EXIT
     }
 
-    // =========================================================
-    // VISUAL THEME
-    // =========================================================
+    /*
+     * =========================================================
+     * COLORS
+     * =========================================================
+     */
 
     private static final Color GOLD =
-        Color.valueOf("E6B84A");
+        Color.valueOf("E8BC55");
 
-    private static final Color CREAM =
-        Color.valueOf("F2E9D5");
+    private static final Color GOLD_SOFT =
+        Color.valueOf("B9923F");
+
+    private static final Color CYAN =
+        Color.valueOf("6FE7E0");
+
+    private static final Color WHITE =
+        Color.valueOf("F6F1E7");
+
+    private static final Color TEXT =
+        Color.valueOf("E7E0D3");
 
     private static final Color MUTED =
-        Color.valueOf("B9B2A4");
+        Color.valueOf("A7A39B");
+
+    private static final Color DARK =
+        Color.valueOf("090D12");
 
     private static final Color PANEL =
-        Color.valueOf("10151B");
+        Color.valueOf("10161D");
 
     private static final Color PANEL_SOFT =
-        Color.valueOf("171D24");
+        Color.valueOf("171E26");
 
-    // =========================================================
-    // UI OBJECTS
-    // =========================================================
+    /*
+     * =========================================================
+     * CORE
+     * =========================================================
+     */
 
     private final Stage stage;
-
     private final Skin skin;
-
     private final BitmapFont font;
-
     private final ShapeRenderer shapes;
 
-    // =========================================================
-    // PROCEDURAL UI TEXTURES
-    // =========================================================
+    /*
+     * =========================================================
+     * TEXTURES
+     * =========================================================
+     */
 
     private Texture panelTexture;
-
-    private Texture panelSoftTexture;
+    private Texture softPanelTexture;
 
     private Texture buttonTexture;
-
-    private Texture buttonOverTexture;
-
-    private Texture buttonDownTexture;
+    private Texture hoverTexture;
+    private Texture downTexture;
 
     private TextureRegionDrawable panelDrawable;
-
-    private TextureRegionDrawable panelSoftDrawable;
+    private TextureRegionDrawable softPanelDrawable;
 
     private TextureRegionDrawable buttonDrawable;
+    private TextureRegionDrawable hoverDrawable;
+    private TextureRegionDrawable downDrawable;
 
-    private TextureRegionDrawable buttonOverDrawable;
-
-    private TextureRegionDrawable buttonDownDrawable;
-
-    // =========================================================
-    // STATE
-    // =========================================================
+    /*
+     * =========================================================
+     * STATE
+     * =========================================================
+     */
 
     private GameState activeState;
 
@@ -121,12 +131,13 @@ public class UIManager implements Disposable {
         Action.NONE;
 
     private boolean settingsOpen;
-
     private boolean exitConfirmation;
 
-    // =========================================================
-    // CONSTRUCTOR
-    // =========================================================
+    /*
+     * =========================================================
+     * CONSTRUCTOR
+     * =========================================================
+     */
 
     public UIManager() {
 
@@ -144,16 +155,18 @@ public class UIManager implements Disposable {
         shapes =
             new ShapeRenderer();
 
-        createDrawables();
+        createTextures();
 
         configureSkin();
     }
 
-    // =========================================================
-    // DRAWABLE CREATION
-    // =========================================================
+    /*
+     * =========================================================
+     * TEXTURES
+     * =========================================================
+     */
 
-    private void createDrawables() {
+    private void createTextures() {
 
         panelTexture =
             createTexture(
@@ -161,67 +174,69 @@ public class UIManager implements Disposable {
                     PANEL.r,
                     PANEL.g,
                     PANEL.b,
-                    0.94f
+                    0.92f
                 )
             );
 
-        panelSoftTexture =
+        softPanelTexture =
             createTexture(
                 new Color(
                     PANEL_SOFT.r,
                     PANEL_SOFT.g,
                     PANEL_SOFT.b,
-                    0.90f
+                    0.88f
                 )
             );
 
         buttonTexture =
             createTexture(
                 new Color(
-                    0.07f,
-                    0.09f,
-                    0.11f,
-                    0.84f
+                    0.06f,
+                    0.08f,
+                    0.10f,
+                    0.82f
                 )
             );
 
-        buttonOverTexture =
+        hoverTexture =
+            createTexture(
+                new Color(
+                    CYAN.r,
+                    CYAN.g,
+                    CYAN.b,
+                    0.12f
+                )
+            );
+
+        downTexture =
             createTexture(
                 new Color(
                     GOLD.r,
                     GOLD.g,
                     GOLD.b,
-                    0.18f
-                )
-            );
-
-        buttonDownTexture =
-            createTexture(
-                new Color(
-                    GOLD.r,
-                    GOLD.g,
-                    GOLD.b,
-                    0.30f
+                    0.24f
                 )
             );
 
         panelDrawable =
             drawable(panelTexture);
 
-        panelSoftDrawable =
-            drawable(panelSoftTexture);
+        softPanelDrawable =
+            drawable(softPanelTexture);
 
         buttonDrawable =
             drawable(buttonTexture);
 
-        buttonOverDrawable =
-            drawable(buttonOverTexture);
+        hoverDrawable =
+            drawable(hoverTexture);
 
-        buttonDownDrawable =
-            drawable(buttonDownTexture);
+        downDrawable =
+            drawable(downTexture);
     }
 
-    private Texture createTexture(Color color) {
+    private Texture createTexture(
+        Color color
+    ) {
 
         Pixmap pixmap =
             new Pixmap(
@@ -256,91 +271,74 @@ public class UIManager implements Disposable {
         );
     }
 
-    // =========================================================
-    // SKIN
-    // =========================================================
+    /*
+     * =========================================================
+     * SKIN
+     * =========================================================
+     */
 
     private void configureSkin() {
 
         skin.add(
-            "default-font",
+            "font",
             font
         );
 
         Label.LabelStyle labelStyle =
             new Label.LabelStyle();
 
-        labelStyle.font =
-            font;
-
-        labelStyle.fontColor =
-            CREAM;
+        labelStyle.font = font;
+        labelStyle.fontColor = TEXT;
 
         skin.add(
             "default",
             labelStyle
         );
 
-        TextButton.TextButtonStyle buttonStyle =
+        TextButton.TextButtonStyle style =
             new TextButton.TextButtonStyle();
 
-        buttonStyle.font =
-            font;
+        style.font = font;
 
-        buttonStyle.fontColor =
-            CREAM;
+        style.fontColor =
+            TEXT;
 
-        buttonStyle.overFontColor =
-            GOLD;
+        style.overFontColor =
+            CYAN;
 
-        buttonStyle.downFontColor =
-            Color.WHITE;
+        style.downFontColor =
+            WHITE;
 
-        buttonStyle.up =
+        style.up =
             buttonDrawable;
 
-        buttonStyle.over =
-            buttonOverDrawable;
+        style.over =
+            hoverDrawable;
 
-        buttonStyle.down =
-            buttonDownDrawable;
+        style.down =
+            downDrawable;
 
         skin.add(
-            "menu",
-            buttonStyle
+            "cinematic",
+            style
         );
     }
 
-    // =========================================================
-    // STATE UI
-    // =========================================================
-
-    /**
-     * Builds the UI for a game state.
-     *
-     * The actor tree is rebuilt only when the state changes.
-     * It is never rebuilt every frame.
+    /*
+     * =========================================================
+     * STATE UI
+     * =========================================================
      */
+
     public void showState(
         GameState state
     ) {
 
         if (
             state == activeState &&
-            (
-                exitConfirmation ||
-                settingsOpen
-            )
+            !settingsOpen &&
+            !exitConfirmation
         ) {
-
-            return;
-        }
-
-        if (state == activeState) {
-
-            setInteractive(
-                state != GameState.PLAYING
-            );
 
             return;
         }
@@ -350,8 +348,8 @@ public class UIManager implements Disposable {
 
         stage.clear();
 
-        settingsOpen =
-            false;
+        settingsOpen = false;
+        exitConfirmation = false;
 
         if (
             state ==
@@ -380,9 +378,11 @@ public class UIManager implements Disposable {
         );
     }
 
-    // =========================================================
-    // MAIN MENU
-    // =========================================================
+    /*
+     * =========================================================
+     * MAIN MENU
+     * =========================================================
+     */
 
     private void buildMainMenu() {
 
@@ -393,144 +393,119 @@ public class UIManager implements Disposable {
 
         root.top().left();
 
-        root.pad(
-            0f,
-            0f,
-            0f,
-            0f
-        );
-
         Table content =
             new Table();
 
         content.top().left();
 
-        content.padTop(
-            105f
-        );
+        content.padTop(95f);
+        content.padLeft(85f);
 
-        content.padLeft(
-            96f
-        );
-
-        Label eyebrow =
+        content.add(
             label(
-                "DHAKA UNIVERSITY CAMPUS  •  LEVEL 1",
+                "DHAKA UNIVERSITY CAMPUS",
                 0.72f,
                 GOLD
-            );
+            )
+        )
+        .left()
+        .row();
 
-        Label title =
+        content.add(
             label(
                 "2x12",
-                4.6f,
-                Color.WHITE
-            );
+                4.4f,
+                WHITE
+            )
+        )
+        .left()
+        .padTop(4f)
+        .row();
 
-        Label subtitle =
+        content.add(
             label(
                 "WHERE WINDS MEET STYLE",
-                1.25f,
-                CREAM
-            );
+                1.12f,
+                TEXT
+            )
+        )
+        .left()
+        .padTop(2f)
+        .row();
 
-        Label period =
+        content.add(
             label(
                 "A HISTORICAL ADVENTURE",
-                0.72f,
+                0.70f,
                 MUTED
-            );
-
-        content
-            .add(eyebrow)
-            .left()
-            .row();
-
-        content
-            .add(title)
-            .left()
-            .padTop(8f)
-            .row();
-
-        content
-            .add(subtitle)
-            .left()
-            .padTop(2f)
-            .row();
-
-        content
-            .add(period)
-            .left()
-            .padTop(10f)
-            .row();
-
-        content
-            .add()
-            .height(62f)
-            .row();
-
-        content
-            .add(
-                menuButton(
-                    "BEGIN JOURNEY",
-                    Action.START_LEVEL1
-                )
             )
-            .width(330f)
-            .height(56f)
-            .left()
+        )
+        .left()
+        .padTop(8f)
+        .row();
+
+        content.add()
+            .height(58f)
             .row();
 
-        content
-            .add(
-                menuButton(
-                    "SETTINGS",
-                    Action.SETTINGS
-                )
+        content.add(
+            menuButton(
+                "BEGIN JOURNEY",
+                Action.START_LEVEL1
             )
-            .width(330f)
-            .height(50f)
-            .left()
-            .padTop(10f)
-            .row();
+        )
+        .width(330f)
+        .height(56f)
+        .left()
+        .row();
 
-        content
-            .add(
-                menuButton(
-                    "EXIT",
-                    Action.EXIT_GAME
-                )
+        content.add(
+            menuButton(
+                "SETTINGS",
+                Action.SETTINGS
             )
-            .width(330f)
-            .height(50f)
-            .left()
-            .padTop(10f)
-            .row();
+        )
+        .width(330f)
+        .height(50f)
+        .left()
+        .padTop(9f)
+        .row();
 
-        Label controls =
+        content.add(
+            menuButton(
+                "EXIT",
+                Action.EXIT_GAME
+            )
+        )
+        .width(330f)
+        .height(50f)
+        .left()
+        .padTop(9f)
+        .row();
+
+        content.add(
             label(
-                "↑ ↓  SELECT        ENTER  CONFIRM        ESC  EXIT",
-                0.66f,
+                "↑ ↓  NAVIGATE     ENTER / SPACE  SELECT     ESC  BACK",
+                0.61f,
                 MUTED
-            );
+            )
+        )
+        .left()
+        .padTop(34f)
+        .row();
 
-        content
-            .add(controls)
-            .left()
-            .padTop(38f)
-            .row();
-
-        root
-            .add(content)
+        root.add(content)
             .expand()
             .fill();
 
         addAnimatedActor(root);
     }
 
-    // =========================================================
-    // LEVEL 1 INTRO
-    // =========================================================
+    /*
+     * =========================================================
+     * INTRO
+     * =========================================================
+     */
 
     private void buildIntro() {
 
@@ -549,97 +524,92 @@ public class UIManager implements Disposable {
         );
 
         panel.pad(
-            34f,
-            46f,
             30f,
-            46f
+            42f,
+            28f,
+            42f
         );
 
-        panel
-            .add(
-                label(
-                    "LEVEL 1  /  WHERE IT ALL BEGAN",
-                    0.76f,
-                    GOLD
-                )
+        panel.add(
+            label(
+                "LEVEL 01  /  WHERE IT ALL BEGAN",
+                0.72f,
+                GOLD
             )
-            .left()
-            .row();
+        )
+        .left()
+        .row();
 
-        panel
-            .add(
-                label(
-                    "MID-JUNE 2024",
-                    2.05f,
-                    Color.WHITE
-                )
+        panel.add(
+            label(
+                "MID-JUNE 2024",
+                2.05f,
+                WHITE
             )
-            .left()
-            .padTop(7f)
-            .row();
+        )
+        .left()
+        .padTop(6f)
+        .row();
 
-        panel
-            .add(
-                label(
-                    "A normal day is about to change.",
-                    1.0f,
-                    CREAM
-                )
+        panel.add(
+            label(
+                "A normal day is about to change.",
+                0.98f,
+                TEXT
             )
-            .left()
-            .padTop(12f)
-            .row();
+        )
+        .left()
+        .padTop(10f)
+        .row();
 
-        panel
-            .add(
-                label(
-                    "Explore the campus and discover what is happening.",
-                    0.82f,
-                    MUTED
-                )
+        panel.add(
+            label(
+                "Explore the campus. Follow the clues. Discover what is happening.",
+                0.76f,
+                MUTED
             )
-            .left()
-            .padTop(5f)
-            .row();
+        )
+        .left()
+        .padTop(6f)
+        .row();
 
-        panel
-            .add(
-                menuButton(
-                    "ENTER CAMPUS",
-                    Action.START_PLAYING
-                )
+        panel.add(
+            menuButton(
+                "ENTER CAMPUS",
+                Action.START_PLAYING
             )
-            .left()
-            .width(260f)
-            .height(50f)
-            .padTop(22f)
-            .row();
+        )
+        .left()
+        .width(255f)
+        .height(50f)
+        .padTop(20f)
+        .row();
 
-        panel
-            .add(
-                label(
-                    "ENTER  BEGIN        Q  EXIT",
-                    0.64f,
-                    MUTED
-                )
+        panel.add(
+            label(
+                "ENTER / SPACE  BEGIN       Q / ESC  EXIT",
+                0.62f,
+                MUTED
             )
-            .left()
-            .padTop(12f)
-            .row();
+        )
+        .left()
+        .padTop(11f)
+        .row();
 
-        root
-            .add(panel)
-            .width(560f)
-            .padLeft(42f)
-            .padBottom(42f)
+        root.add(panel)
+            .width(590f)
+            .padLeft(38f)
+            .padBottom(38f)
             .left();
 
         addAnimatedActor(root);
     }
 
-    // =========================================================
-    // PAUSE MENU
-    // =========================================================
+    /*
+     * =========================================================
+     * PAUSE
+     * =========================================================
+     */
 
     private void buildPauseMenu() {
 
@@ -658,109 +628,102 @@ public class UIManager implements Disposable {
         );
 
         panel.pad(
-            38f,
-            48f,
             34f,
-            48f
+            46f,
+            30f,
+            46f
         );
 
-        panel
-            .add(
-                label(
-                    "PAUSED",
-                    2.55f,
-                    Color.WHITE
-                )
+        panel.add(
+            label(
+                "PAUSED",
+                2.4f,
+                WHITE
             )
-            .center()
-            .row();
+        )
+        .center()
+        .row();
 
-        panel
-            .add(
-                label(
-                    "2x12  •  DHAKA UNIVERSITY CAMPUS",
-                    0.68f,
-                    GOLD
-                )
+        panel.add(
+            label(
+                "2x12  •  DHAKA UNIVERSITY CAMPUS",
+                0.66f,
+                GOLD
             )
-            .center()
-            .padTop(5f)
+        )
+        .center()
+        .padTop(5f)
+        .row();
+
+        panel.add()
+            .height(25f)
             .row();
 
-        panel
-            .add()
-            .height(28f)
-            .row();
-
-        panel
-            .add(
-                menuButton(
-                    "RESUME",
-                    Action.RESUME
-                )
+        panel.add(
+            menuButton(
+                "RESUME",
+                Action.RESUME
             )
-            .width(310f)
-            .height(52f)
-            .row();
+        )
+        .width(310f)
+        .height(52f)
+        .row();
 
-        panel
-            .add(
-                menuButton(
-                    "SETTINGS",
-                    Action.SETTINGS
-                )
+        panel.add(
+            menuButton(
+                "SETTINGS",
+                Action.SETTINGS
             )
-            .width(310f)
-            .height(48f)
-            .padTop(9f)
-            .row();
+        )
+        .width(310f)
+        .height(48f)
+        .padTop(8f)
+        .row();
 
-        panel
-            .add(
-                menuButton(
-                    "EXIT TO MAIN MENU",
-                    Action.EXIT_TO_MAIN_MENU
-                )
+        panel.add(
+            menuButton(
+                "EXIT TO MAIN MENU",
+                Action.EXIT_TO_MAIN_MENU
             )
-            .width(310f)
-            .height(48f)
-            .padTop(9f)
-            .row();
+        )
+        .width(310f)
+        .height(48f)
+        .padTop(8f)
+        .row();
 
-        panel
-            .add(
-                menuButton(
-                    "EXIT GAME",
-                    Action.EXIT_GAME
-                )
+        panel.add(
+            menuButton(
+                "EXIT GAME",
+                Action.EXIT_GAME
             )
-            .width(310f)
-            .height(48f)
-            .padTop(9f)
-            .row();
+        )
+        .width(310f)
+        .height(48f)
+        .padTop(8f)
+        .row();
 
-        panel
-            .add(
-                label(
-                    "ESC  RESUME",
-                    0.64f,
-                    MUTED
-                )
+        panel.add(
+            label(
+                "ESC  RESUME",
+                0.61f,
+                MUTED
             )
-            .center()
-            .padTop(20f)
-            .row();
+        )
+        .center()
+        .padTop(18f)
+        .row();
 
-        root
-            .add(panel)
+        root.add(panel)
             .width(430f);
 
         addAnimatedActor(root);
     }
 
-    // =========================================================
-    // BUTTON
-    // =========================================================
+    /*
+     * =========================================================
+     * BUTTON
+     * =========================================================
+     */
 
     private TextButton menuButton(
         String text,
@@ -771,12 +734,12 @@ public class UIManager implements Disposable {
             new TextButton(
                 text,
                 skin,
-                "menu"
+                "cinematic"
             );
 
         button
             .getLabel()
-            .setFontScale(0.82f);
+            .setFontScale(0.80f);
 
         button.addListener(
             new ClickListener() {
@@ -797,9 +760,11 @@ public class UIManager implements Disposable {
         return button;
     }
 
-    // =========================================================
-    // LABEL
-    // =========================================================
+    /*
+     * =========================================================
+     * LABEL
+     * =========================================================
+     */
 
     private Label label(
         String text,
@@ -813,48 +778,44 @@ public class UIManager implements Disposable {
                 skin
             );
 
-        label.setColor(
-            color
-        );
+        label.setColor(color);
 
-        label.setFontScale(
-            scale
-        );
+        label.setFontScale(scale);
 
         return label;
     }
 
-    // =========================================================
-    // ANIMATION
-    // =========================================================
+    /*
+     * =========================================================
+     * ANIMATION
+     * =========================================================
+     */
 
     private void addAnimatedActor(
         Actor actor
     ) {
 
-        actor.getColor().a =
-            0f;
+        actor.getColor().a = 0f;
 
-        stage.addActor(
-            actor
-        );
+        stage.addActor(actor);
 
         actor.addAction(
             Actions.fadeIn(
-                0.28f,
+                0.30f,
                 Interpolation.fade
             )
         );
     }
 
-    // =========================================================
-    // SETTINGS
-    // =========================================================
+    /*
+     * =========================================================
+     * SETTINGS
+     * =========================================================
+     */
 
     public void showSettings() {
 
-        settingsOpen =
-            true;
+        settingsOpen = true;
 
         stage.clear();
 
@@ -869,130 +830,133 @@ public class UIManager implements Disposable {
             new Table();
 
         panel.setBackground(
-            panelSoftDrawable
+            softPanelDrawable
         );
 
         panel.pad(
-            36f,
-            44f,
+            35f,
+            45f,
             32f,
-            44f
+            45f
         );
 
-        panel
-            .add(
-                label(
-                    "SETTINGS",
-                    2.15f,
-                    Color.WHITE
-                )
+        panel.add(
+            label(
+                "SETTINGS",
+                2.05f,
+                WHITE
             )
-            .center()
-            .row();
+        )
+        .center()
+        .row();
 
-        panel
-            .add(
-                label(
-                    "Presentation",
-                    0.72f,
-                    GOLD
-                )
+        panel.add(
+            label(
+                "PRESENTATION",
+                0.68f,
+                GOLD
             )
-            .left()
-            .padTop(20f)
-            .row();
+        )
+        .left()
+        .padTop(20f)
+        .row();
 
-        panel
-            .add(
-                label(
-                    "Resolution: Desktop / Fullscreen",
-                    0.82f,
-                    CREAM
-                )
+        panel.add(
+            label(
+                "Display       Desktop / Fullscreen",
+                0.80f,
+                TEXT
             )
-            .left()
-            .padTop(8f)
-            .row();
+        )
+        .left()
+        .padTop(9f)
+        .row();
 
-        panel
-            .add(
-                label(
-                    "VSync: Enabled",
-                    0.82f,
-                    CREAM
-                )
+        panel.add(
+            label(
+                "VSync         Enabled",
+                0.80f,
+                TEXT
             )
-            .left()
-            .padTop(5f)
-            .row();
+        )
+        .left()
+        .padTop(6f)
+        .row();
 
-        panel
-            .add(
-                label(
-                    "Camera: Mouse controlled",
-                    0.82f,
-                    CREAM
-                )
+        panel.add(
+            label(
+                "Camera        Mouse controlled",
+                0.80f,
+                TEXT
             )
-            .left()
-            .padTop(5f)
-            .row();
+        )
+        .left()
+        .padTop(6f)
+        .row();
 
-        panel
-            .add(
-                label(
-                    "Audio: Ready for project assets",
-                    0.82f,
-                    MUTED
-                )
+        panel.add(
+            label(
+                "Audio          Project audio",
+                0.80f,
+                TEXT
             )
-            .left()
-            .padTop(5f)
-            .row();
+        )
+        .left()
+        .padTop(6f)
+        .row();
 
-        panel
-            .add(
-                menuButton(
-                    "BACK",
-                    Action.CLOSE_SETTINGS
-                )
+        panel.add(
+            label(
+                "Controls      WASD / SHIFT / ESC",
+                0.80f,
+                CYAN
             )
-            .width(220f)
-            .height(48f)
-            .padTop(24f)
-            .row();
+        )
+        .left()
+        .padTop(6f)
+        .row();
 
-        panel
-            .add(
-                label(
-                    "ESC  BACK",
-                    0.64f,
-                    MUTED
-                )
+        panel.add(
+            menuButton(
+                "BACK",
+                Action.CLOSE_SETTINGS
             )
-            .center()
-            .padTop(12f)
-            .row();
+        )
+        .width(220f)
+        .height(48f)
+        .padTop(24f)
+        .row();
 
-        root
-            .add(panel)
-            .width(440f);
+        panel.add(
+            label(
+                "ESC  BACK",
+                0.61f,
+                MUTED
+            )
+        )
+        .center()
+        .padTop(11f)
+        .row();
+
+        root.add(panel)
+            .width(455f);
 
         addAnimatedActor(root);
 
         setInteractive(true);
     }
 
-    // =========================================================
-    // EXIT CONFIRMATION
-    // =========================================================
+    /*
+     * =========================================================
+     * EXIT CONFIRMATION
+     * =========================================================
+     */
 
     public void showExitConfirmation(
         boolean fromMainMenu
     ) {
 
-        exitConfirmation =
-            true;
+        exitConfirmation = true;
 
         stage.clear();
 
@@ -1017,69 +981,63 @@ public class UIManager implements Disposable {
             44f
         );
 
-        panel
-            .add(
-                label(
-                    fromMainMenu
-                        ? "EXIT 2x12?"
-                        : "LEAVE GAME?",
-                    2.0f,
-                    Color.WHITE
-                )
+        panel.add(
+            label(
+                fromMainMenu
+                    ? "EXIT 2x12?"
+                    : "LEAVE GAME?",
+                1.95f,
+                WHITE
             )
-            .center()
-            .row();
+        )
+        .center()
+        .row();
 
-        panel
-            .add(
-                label(
-                    "Are you sure you want to leave this session?",
-                    0.82f,
-                    CREAM
-                )
+        panel.add(
+            label(
+                "Are you sure you want to leave this session?",
+                0.78f,
+                TEXT
             )
-            .center()
-            .padTop(12f)
-            .row();
+        )
+        .center()
+        .padTop(11f)
+        .row();
 
-        panel
-            .add(
-                menuButton(
-                    "YES, EXIT",
-                    Action.CONFIRM_EXIT
-                )
+        panel.add(
+            menuButton(
+                "YES, EXIT",
+                Action.CONFIRM_EXIT
             )
-            .width(270f)
-            .height(50f)
-            .padTop(22f)
-            .row();
+        )
+        .width(270f)
+        .height(50f)
+        .padTop(21f)
+        .row();
 
-        panel
-            .add(
-                menuButton(
-                    "NO, GO BACK",
-                    Action.CANCEL_EXIT
-                )
+        panel.add(
+            menuButton(
+                "NO, GO BACK",
+                Action.CANCEL_EXIT
             )
-            .width(270f)
-            .height(50f)
-            .padTop(9f)
-            .row();
+        )
+        .width(270f)
+        .height(50f)
+        .padTop(8f)
+        .row();
 
-        panel
-            .add(
-                label(
-                    "ENTER  CONFIRM        ESC  CANCEL",
-                    0.64f,
-                    MUTED
-                )
+        panel.add(
+            label(
+                "ENTER  CONFIRM       ESC  CANCEL",
+                0.60f,
+                MUTED
             )
-            .center()
-            .padTop(16f)
-            .row();
+        )
+        .center()
+        .padTop(15f)
+        .row();
 
-        root
-            .add(panel)
+        root.add(panel)
             .width(430f);
 
         addAnimatedActor(root);
@@ -1087,15 +1045,12 @@ public class UIManager implements Disposable {
         setInteractive(true);
     }
 
-    // =========================================================
-    // BACKDROP
-    // =========================================================
-
-    /**
-     * Draws a subtle cinematic backdrop for menu screens.
-     *
-     * No external image dependency is required.
+    /*
+     * =========================================================
+     * CINEMATIC BACKDROP
+     * =========================================================
      */
+
     public void renderBackdrop(
         boolean dark
     ) {
@@ -1114,28 +1069,14 @@ public class UIManager implements Disposable {
             ShapeRenderer.ShapeType.Filled
         );
 
-        if (dark) {
-
-            shapes.setColor(
-                new Color(
-                    0.018f,
-                    0.025f,
-                    0.034f,
-                    1f
-                )
-            );
-
-        } else {
-
-            shapes.setColor(
-                new Color(
-                    0.03f,
-                    0.04f,
-                    0.05f,
-                    1f
-                )
-            );
-        }
+        shapes.setColor(
+            new Color(
+                DARK.r,
+                DARK.g,
+                DARK.b,
+                1f
+            )
+        );
 
         shapes.rect(
             0f,
@@ -1144,54 +1085,81 @@ public class UIManager implements Disposable {
             height
         );
 
+        /*
+         * Soft atmospheric layer.
+         */
         shapes.setColor(
             new Color(
-                0.10f,
-                0.12f,
-                0.13f,
-                0.30f
+                0.06f,
+                0.09f,
+                0.11f,
+                0.42f
             )
         );
 
         shapes.rect(
             0f,
-            height * 0.62f,
+            height * 0.52f,
             width,
-            height * 0.38f
+            height * 0.48f
         );
 
+        /*
+         * Gold cinematic accent.
+         */
         shapes.setColor(
             new Color(
-                GOLD.r,
-                GOLD.g,
-                GOLD.b,
-                0.45f
+                GOLD_SOFT.r,
+                GOLD_SOFT.g,
+                GOLD_SOFT.b,
+                0.55f
             )
         );
 
         shapes.rect(
-            72f,
-            78f,
+            70f,
+            75f,
             2f,
-            height - 156f
+            height - 150f
         );
 
         shapes.rect(
-            72f,
-            height - 82f,
+            70f,
+            height - 80f,
             Math.min(
-                560f,
+                570f,
                 width * 0.42f
             ),
             2f
         );
 
+        /*
+         * Cyan subtle accent.
+         */
+        shapes.setColor(
+            new Color(
+                CYAN.r,
+                CYAN.g,
+                CYAN.b,
+                0.28f
+            )
+        );
+
+        shapes.rect(
+            width - 120f,
+            75f,
+            1f,
+            height - 150f
+        );
+
         shapes.end();
     }
 
-    // =========================================================
-    // RENDER
-    // =========================================================
+    /*
+     * =========================================================
+     * RENDER
+     * =========================================================
+     */
 
     public void render(
         float delta
@@ -1207,47 +1175,31 @@ public class UIManager implements Disposable {
         stage.draw();
     }
 
-    // =========================================================
-    // GAMEPLAY OVERLAY
-    // =========================================================
-
-    /**
-     * Extension point for future health/stamina/ability UI.
-     *
-     * The existing Level1World already owns the current mission HUD,
-     * therefore this method intentionally does not duplicate it.
+    /*
+     * Gameplay overlay extension point.
      */
     public void renderGameplayOverlay(
         float delta
     ) {
-
-        // Reserved for future gameplay values.
+        /*
+         * Existing Level1World HUD remains responsible
+         * for gameplay values already implemented there.
+         */
     }
 
-    // =========================================================
-    // INPUT MODE
-    // =========================================================
-
-    /**
-     * Switches between menu mouse interaction and gameplay camera mode.
-     *
-     * UI mode:
-     * - cursor visible
-     * - Stage receives mouse input
-     *
-     * Gameplay mode:
-     * - cursor captured
-     * - existing Level1World camera controls the mouse
+    /*
+     * =========================================================
+     * INPUT MODE
+     * =========================================================
      */
+
     public void setInteractive(
         boolean interactive
     ) {
 
         if (interactive) {
 
-            Gdx.input.setCursorCatched(
-                false
-            );
+            Gdx.input.setCursorCatched(false);
 
             Gdx.input.setInputProcessor(
                 stage
@@ -1255,19 +1207,17 @@ public class UIManager implements Disposable {
 
         } else {
 
-            Gdx.input.setInputProcessor(
-                null
-            );
+            Gdx.input.setInputProcessor(null);
 
-            Gdx.input.setCursorCatched(
-                true
-            );
+            Gdx.input.setCursorCatched(true);
         }
     }
 
-    // =========================================================
-    // ACTION QUEUE
-    // =========================================================
+    /*
+     * =========================================================
+     * ACTION QUEUE
+     * =========================================================
+     */
 
     public Action consumeAction() {
 
@@ -1280,9 +1230,11 @@ public class UIManager implements Disposable {
         return action;
     }
 
-    // =========================================================
-    // STATE FLAGS
-    // =========================================================
+    /*
+     * =========================================================
+     * FLAGS
+     * =========================================================
+     */
 
     public boolean isSettingsOpen() {
 
@@ -1296,8 +1248,7 @@ public class UIManager implements Disposable {
 
     public void closeSettings() {
 
-        settingsOpen =
-            false;
+        settingsOpen = false;
 
         pendingAction =
             Action.CLOSE_SETTINGS;
@@ -1305,8 +1256,7 @@ public class UIManager implements Disposable {
 
     public void cancelExitConfirmation() {
 
-        exitConfirmation =
-            false;
+        exitConfirmation = false;
 
         pendingAction =
             Action.CANCEL_EXIT;
@@ -1314,28 +1264,29 @@ public class UIManager implements Disposable {
 
     public void clearOverlayFlags() {
 
-        settingsOpen =
-            false;
+        settingsOpen = false;
 
-        exitConfirmation =
-            false;
+        exitConfirmation = false;
 
-        activeState =
-            null;
+        activeState = null;
     }
 
-    // =========================================================
-    // STAGE
-    // =========================================================
+    /*
+     * =========================================================
+     * STAGE
+     * =========================================================
+     */
 
     public Stage getStage() {
 
         return stage;
     }
 
-    // =========================================================
-    // DISPOSE
-    // =========================================================
+    /*
+     * =========================================================
+     * DISPOSE
+     * =========================================================
+     */
 
     @Override
     public void dispose() {
@@ -1350,20 +1301,20 @@ public class UIManager implements Disposable {
             panelTexture.dispose();
         }
 
-        if (panelSoftTexture != null) {
-            panelSoftTexture.dispose();
+        if (softPanelTexture != null) {
+            softPanelTexture.dispose();
         }
 
         if (buttonTexture != null) {
             buttonTexture.dispose();
         }
 
-        if (buttonOverTexture != null) {
-            buttonOverTexture.dispose();
+        if (hoverTexture != null) {
+            hoverTexture.dispose();
         }
 
-        if (buttonDownTexture != null) {
-            buttonDownTexture.dispose();
+        if (downTexture != null) {
+            downTexture.dispose();
         }
     }
 }
