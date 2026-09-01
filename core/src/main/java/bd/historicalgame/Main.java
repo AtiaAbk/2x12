@@ -1,34 +1,40 @@
 package bd.historicalgame;
 
-import bd.historicalgame.game.GameConfig;
 import bd.historicalgame.game.GameManager;
 import bd.historicalgame.game.GameState;
+import bd.historicalgame.ui.UIManager;
 import bd.historicalgame.world.World;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 /**
  * Main entry point of 2x12.
+ *
+ * Rendering and interaction for every non-gameplay screen
+ * (main menu, intro, pause, settings, exit confirmation) is
+ * delegated to {@link UIManager}, which owns the Stage, the
+ * cinematic dark/gold/cyan visual theme, and mouse click
+ * handling. This class keeps ownership of the high-level
+ * state machine and keyboard shortcuts, and routes both
+ * mouse clicks (via UIManager.Action) and keyboard presses
+ * through the same transition methods so the two input
+ * paths can never disagree about game state.
  */
 public class Main extends ApplicationAdapter {
 
-    private SpriteBatch batch;
-    private BitmapFont font;
+    private UIManager uiManager;
 
     private GameManager gameManager;
     private World world;
 
+    /*
+     * Main menu options (keyboard navigation index).
+     */
     private int selectedOption = 0;
 
-    /*
-     * Main menu options.
-     */
     private final String[] menuOptions = {
         "PLAY",
         "SETTINGS",
@@ -36,12 +42,17 @@ public class Main extends ApplicationAdapter {
     };
 
     /*
-     * Pause menu options.
+     * Pause menu options (keyboard navigation index).
+     *
+     * Order matches the buttons UIManager draws for the
+     * pause screen: RESUME, SETTINGS, EXIT TO MAIN MENU,
+     * EXIT GAME.
      */
     private int pauseOption = 0;
 
     private final String[] pauseOptions = {
         "RESUME",
+        "SETTINGS",
         "EXIT TO MAIN MENU",
         "EXIT GAME"
     };
@@ -50,6 +61,13 @@ public class Main extends ApplicationAdapter {
      * Exit confirmation.
      */
     private boolean exitConfirmation = false;
+
+    /*
+     * True when the open confirmation dialog was requested
+     * from the pause menu's "EXIT TO MAIN MENU" option, so
+     * confirming returns to the main menu instead of quitting.
+     */
+    private boolean exitToMainMenu = false;
 
     private int exitSelection = 0;
 
@@ -61,10 +79,9 @@ public class Main extends ApplicationAdapter {
     @Override
     public void create() {
 
-        batch = new SpriteBatch();
-        font = new BitmapFont();
-
         gameManager = new GameManager();
+
+        uiManager = new UIManager();
 
         world = null;
 
@@ -86,8 +103,24 @@ public class Main extends ApplicationAdapter {
 
         handleInput();
 
+        processUIActions();
+
         GameState state =
             gameManager.getCurrentState();
+
+        /*
+         * Keep the UIManager screen in sync with the current
+         * game state every frame. showState() is a cheap no-op
+         * once it is already showing the right screen, so this
+         * is safe to call continuously. It is skipped while an
+         * overlay (settings / exit confirmation) is open so the
+         * overlay isn't clobbered mid-display.
+         */
+        if (!exitConfirmation &&
+            !uiManager.isSettingsOpen()) {
+
+            uiManager.showState(state);
+        }
 
         /*
          * If exit confirmation is active,
@@ -96,7 +129,9 @@ public class Main extends ApplicationAdapter {
         if (exitConfirmation) {
 
             renderCurrentBackground(state);
-            renderExitConfirmation();
+
+            uiManager.renderBackdrop(true);
+            uiManager.render(delta);
 
             return;
         }
@@ -104,11 +139,13 @@ public class Main extends ApplicationAdapter {
         switch (state) {
 
             case MAIN_MENU:
-                renderMainMenu();
-                break;
-
             case LEVEL1_INTRO:
-                renderLevel1Intro();
+
+                renderCurrentBackground(state);
+
+                uiManager.renderBackdrop(false);
+                uiManager.render(delta);
+
                 break;
 
             case PLAYING:
@@ -127,17 +164,91 @@ public class Main extends ApplicationAdapter {
                     world.render();
                 }
 
-                renderPause();
+                uiManager.render(delta);
                 break;
 
             default:
-                renderMainMenu();
+
+                renderCurrentBackground(state);
+
+                uiManager.renderBackdrop(false);
+                uiManager.render(delta);
+
                 break;
         }
     }
 
     // =========================================================
-    // INPUT
+    // UI ACTIONS (MOUSE)
+    // =========================================================
+
+    /**
+     * Consumes at most one pending click-driven action per
+     * frame from the UIManager and routes it through the same
+     * methods keyboard input uses, so mouse and keyboard can
+     * never leave the game in inconsistent states.
+     */
+    private void processUIActions() {
+
+        UIManager.Action action =
+            uiManager.consumeAction();
+
+        switch (action) {
+
+            case START_LEVEL1:
+                startLevel1();
+                break;
+
+            case START_PLAYING:
+
+                gameManager.startPlaying();
+
+                System.out.println(
+                    "LEVEL 1 STARTED"
+                );
+
+                break;
+
+            case RESUME:
+                gameManager.resumeGame();
+                break;
+
+            case SETTINGS:
+                uiManager.showSettings();
+                break;
+
+            case CLOSE_SETTINGS:
+
+                uiManager.showState(
+                    gameManager.getCurrentState()
+                );
+
+                break;
+
+            case EXIT_TO_MAIN_MENU:
+                requestExitToMainMenu();
+                break;
+
+            case EXIT_GAME:
+                requestExit();
+                break;
+
+            case CONFIRM_EXIT:
+                confirmExit();
+                break;
+
+            case CANCEL_EXIT:
+                exitConfirmation = false;
+                break;
+
+            case NONE:
+            default:
+                break;
+        }
+    }
+
+    // =========================================================
+    // INPUT (KEYBOARD)
     // =========================================================
 
     private void handleInput() {
@@ -152,6 +263,22 @@ public class Main extends ApplicationAdapter {
         if (exitConfirmation) {
 
             handleExitConfirmation();
+
+            return;
+        }
+
+        // =====================================================
+        // SETTINGS OVERLAY
+        // =====================================================
+
+        if (uiManager.isSettingsOpen()) {
+
+            if (Gdx.input.isKeyJustPressed(
+                Input.Keys.ESCAPE
+            )) {
+
+                uiManager.showState(state);
+            }
 
             return;
         }
@@ -188,9 +315,7 @@ public class Main extends ApplicationAdapter {
                 }
             }
 
-            if (Gdx.input.isKeyJustPressed(
-                Input.Keys.ENTER
-            )) {
+            if (isConfirmPressed()) {
 
                 if (selectedOption == 0) {
 
@@ -199,9 +324,7 @@ public class Main extends ApplicationAdapter {
 
                 else if (selectedOption == 1) {
 
-                    System.out.println(
-                        "Settings selected."
-                    );
+                    uiManager.showSettings();
                 }
 
                 else if (selectedOption == 2) {
@@ -232,9 +355,7 @@ public class Main extends ApplicationAdapter {
         else if (state ==
                  GameState.LEVEL1_INTRO) {
 
-            if (Gdx.input.isKeyJustPressed(
-                Input.Keys.ENTER
-            )) {
+            if (isConfirmPressed()) {
 
                 gameManager.startPlaying();
 
@@ -340,9 +461,7 @@ public class Main extends ApplicationAdapter {
             /*
              * ENTER.
              */
-            if (Gdx.input.isKeyJustPressed(
-                Input.Keys.ENTER
-            )) {
+            if (isConfirmPressed()) {
 
                 handlePauseSelection();
             }
@@ -374,9 +493,17 @@ public class Main extends ApplicationAdapter {
         }
 
         /*
-         * EXIT TO MAIN MENU
+         * SETTINGS
          */
         else if (pauseOption == 1) {
+
+            uiManager.showSettings();
+        }
+
+        /*
+         * EXIT TO MAIN MENU
+         */
+        else if (pauseOption == 2) {
 
             requestExitToMainMenu();
         }
@@ -384,7 +511,7 @@ public class Main extends ApplicationAdapter {
         /*
          * EXIT GAME
          */
-        else if (pauseOption == 2) {
+        else if (pauseOption == 3) {
 
             requestExit();
         }
@@ -396,8 +523,12 @@ public class Main extends ApplicationAdapter {
 
     private void requestExit() {
 
+        exitToMainMenu = false;
+
         exitConfirmation = true;
         exitSelection = 1;
+
+        uiManager.showExitConfirmation(false);
 
         System.out.println(
             "Exit confirmation opened."
@@ -406,8 +537,12 @@ public class Main extends ApplicationAdapter {
 
     private void requestExitToMainMenu() {
 
+        exitToMainMenu = true;
+
         exitConfirmation = true;
         exitSelection = 1;
+
+        uiManager.showExitConfirmation(true);
 
         System.out.println(
             "Main menu confirmation opened."
@@ -445,18 +580,16 @@ public class Main extends ApplicationAdapter {
         }
 
         /*
-         * ENTER
+         * ENTER / SPACE
          */
-        if (Gdx.input.isKeyJustPressed(
-            Input.Keys.ENTER
-        )) {
+        if (isConfirmPressed()) {
 
             /*
              * YES
              */
             if (exitSelection == 0) {
 
-                exitGame();
+                confirmExit();
             }
 
             /*
@@ -477,6 +610,44 @@ public class Main extends ApplicationAdapter {
 
             exitConfirmation = false;
         }
+    }
+
+    /**
+     * Confirms whichever exit flow is currently open: returns
+     * to the main menu if the dialog came from "EXIT TO MAIN
+     * MENU", otherwise quits the application.
+     */
+    private void confirmExit() {
+
+        exitConfirmation = false;
+
+        if (exitToMainMenu) {
+
+            returnToMainMenu();
+
+        } else {
+
+            exitGame();
+        }
+    }
+
+    private void returnToMainMenu() {
+
+        System.out.println(
+            "Returning to main menu..."
+        );
+
+        if (world != null) {
+
+            world.dispose();
+            world = null;
+        }
+
+        gameManager.setState(
+            GameState.MAIN_MENU
+        );
+
+        selectedOption = 0;
     }
 
     private void exitGame() {
@@ -518,6 +689,12 @@ public class Main extends ApplicationAdapter {
     // BACKGROUND
     // =========================================================
 
+    /**
+     * Renders whatever should sit behind the current UIManager
+     * screen: the live 3D world for PLAYING / PAUSED, or a
+     * plain cleared color for every menu-style state (the
+     * UIManager backdrop is painted on top of this).
+     */
     private void renderCurrentBackground(
         GameState state
     ) {
@@ -528,24 +705,10 @@ public class Main extends ApplicationAdapter {
             if (world != null) {
 
                 world.render();
-                return;
             }
-        }
 
-        if (state == GameState.LEVEL1_INTRO) {
-
-            renderLevel1Intro();
             return;
         }
-
-        renderMainMenu();
-    }
-
-    // =========================================================
-    // MAIN MENU
-    // =========================================================
-
-    private void renderMainMenu() {
 
         ScreenUtils.clear(
             0.02f,
@@ -553,301 +716,18 @@ public class Main extends ApplicationAdapter {
             0.03f,
             1f
         );
-
-        batch.begin();
-
-        font.getData().setScale(4f);
-
-        font.draw(
-            batch,
-            GameConfig.GAME_NAME,
-            100,
-            GameConfig.HEIGHT - 100
-        );
-
-        font.getData().setScale(1.3f);
-
-        font.draw(
-            batch,
-            "HISTORICAL ADVENTURE",
-            105,
-            GameConfig.HEIGHT - 150
-        );
-
-        font.getData().setScale(1.6f);
-
-        float startY =
-            GameConfig.HEIGHT - 280;
-
-        for (int i = 0;
-             i < menuOptions.length;
-             i++) {
-
-            String prefix =
-                i == selectedOption
-                ? "> "
-                : "  ";
-
-            font.draw(
-                batch,
-                prefix + menuOptions[i],
-                120,
-                startY - i * 70
-            );
-        }
-
-        font.getData().setScale(1f);
-
-        font.draw(
-            batch,
-            "UP / DOWN  Select",
-            100,
-            70
-        );
-
-        font.draw(
-            batch,
-            "ENTER  Confirm",
-            100,
-            40
-        );
-
-        font.draw(
-            batch,
-            "ESC / Q  Exit",
-            100,
-            15
-        );
-
-        batch.end();
     }
 
     // =========================================================
-    // LEVEL 1 INTRO
+    // KEYBOARD CONFIRMATION
     // =========================================================
 
-    private void renderLevel1Intro() {
-
-        ScreenUtils.clear(
-            0.04f,
-            0.05f,
-            0.06f,
-            1f
-        );
-
-        batch.begin();
-
-        font.getData().setScale(3f);
-
-        font.draw(
-            batch,
-            "LEVEL 1",
-            100,
-            GameConfig.HEIGHT - 100
-        );
-
-        font.getData().setScale(2f);
-
-        font.draw(
-            batch,
-            "WHERE IT ALL BEGAN",
-            100,
-            GameConfig.HEIGHT - 170
-        );
-
-        font.getData().setScale(1.3f);
-
-        font.draw(
-            batch,
-            "Mid-June 2024",
-            100,
-            GameConfig.HEIGHT - 260
-        );
-
-        font.getData().setScale(1.1f);
-
-        font.draw(
-            batch,
-            "A normal day is about to change.",
-            100,
-            GameConfig.HEIGHT - 320
-        );
-
-        font.draw(
-            batch,
-            "Explore the campus and discover what is happening.",
-            100,
-            GameConfig.HEIGHT - 355
-        );
-
-        font.getData().setScale(1f);
-
-        font.draw(
-            batch,
-            "Press ENTER to begin",
-            100,
-            100
-        );
-
-        font.draw(
-            batch,
-            "Press Q to exit",
-            100,
-            60
-        );
-
-        batch.end();
-    }
-
-    // =========================================================
-    // PAUSE
-    // =========================================================
-
-    private void renderPause() {
-
-        /*
-         * Dark transparent overlay.
-         */
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-
-        batch.begin();
-
-        font.getData().setScale(3f);
-
-        font.draw(
-            batch,
-            "PAUSED",
-            GameConfig.WIDTH / 2f - 80,
-            GameConfig.HEIGHT / 2f + 150
-        );
-
-        font.getData().setScale(1.5f);
-
-        for (int i = 0;
-             i < pauseOptions.length;
-             i++) {
-
-            String prefix =
-                i == pauseOption
-                ? "> "
-                : "  ";
-
-            font.draw(
-                batch,
-                prefix + pauseOptions[i],
-                GameConfig.WIDTH / 2f - 130,
-                GameConfig.HEIGHT / 2f + 50 - i * 60
-            );
-        }
-
-        font.getData().setScale(1f);
-
-        font.draw(
-            batch,
-            "UP / DOWN  Select",
-            GameConfig.WIDTH / 2f - 100,
-            80
-        );
-
-        font.draw(
-            batch,
-            "ENTER  Confirm",
-            GameConfig.WIDTH / 2f - 100,
-            50
-        );
-
-        font.draw(
-            batch,
-            "ESC  Resume",
-            GameConfig.WIDTH / 2f - 100,
-            20
-        );
-
-        batch.end();
-
-        Gdx.gl.glDisable(GL20.GL_BLEND);
-    }
-
-    // =========================================================
-    // EXIT CONFIRMATION
-    // =========================================================
-
-    private void renderExitConfirmation() {
-
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-
-        batch.begin();
-
-        font.getData().setScale(2.5f);
-
-        font.draw(
-            batch,
-            "EXIT GAME?",
-            GameConfig.WIDTH / 2f - 100,
-            GameConfig.HEIGHT / 2f + 100
-        );
-
-        font.getData().setScale(1.3f);
-
-        font.draw(
-            batch,
-            "Are you sure you want to exit?",
-            GameConfig.WIDTH / 2f - 160,
-            GameConfig.HEIGHT / 2f + 40
-        );
-
-        font.getData().setScale(1.6f);
-
-        String yes =
-            exitSelection == 0
-            ? "> YES"
-            : "  YES";
-
-        String no =
-            exitSelection == 1
-            ? "> NO"
-            : "  NO";
-
-        font.draw(
-            batch,
-            yes,
-            GameConfig.WIDTH / 2f - 100,
-            GameConfig.HEIGHT / 2f - 50
-        );
-
-        font.draw(
-            batch,
-            no,
-            GameConfig.WIDTH / 2f + 30,
-            GameConfig.HEIGHT / 2f - 50
-        );
-
-        font.getData().setScale(1f);
-
-        font.draw(
-            batch,
-            "LEFT / RIGHT  Select",
-            GameConfig.WIDTH / 2f - 100,
-            70
-        );
-
-        font.draw(
-            batch,
-            "ENTER  Confirm",
-            GameConfig.WIDTH / 2f - 100,
-            40
-        );
-
-        font.draw(
-            batch,
-            "ESC  Cancel",
-            GameConfig.WIDTH / 2f - 100,
-            15
-        );
-
-        batch.end();
-
-        Gdx.gl.glDisable(GL20.GL_BLEND);
+    /**
+     * ENTER and SPACE both work as the universal confirm/select key.
+     */
+    private boolean isConfirmPressed() {
+        return Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
+            || Gdx.input.isKeyJustPressed(Input.Keys.SPACE);
     }
 
     // =========================================================
@@ -863,12 +743,8 @@ public class Main extends ApplicationAdapter {
             world = null;
         }
 
-        if (batch != null) {
-            batch.dispose();
-        }
-
-        if (font != null) {
-            font.dispose();
+        if (uiManager != null) {
+            uiManager.dispose();
         }
     }
 }
