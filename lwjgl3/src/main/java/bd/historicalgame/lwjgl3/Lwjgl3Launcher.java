@@ -51,6 +51,21 @@ public class Lwjgl3Launcher {
         );
 
         // =====================================================
+        // VISUAL QUALITY
+        // =====================================================
+
+        /*
+         * 4x MSAA smooths jagged/soft-looking edges on the 3D
+         * geometry (building corners, character silhouette) that
+         * otherwise contribute to the whole scene looking fuzzy.
+         */
+        configuration.setBackBufferConfig(
+            8, 8, 8, 8,
+            16, 0,
+            4
+        );
+
+        // =====================================================
         // PERFORMANCE
         // =====================================================
 

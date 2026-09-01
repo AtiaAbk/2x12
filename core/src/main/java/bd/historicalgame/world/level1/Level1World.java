@@ -1,5 +1,6 @@
 package bd.historicalgame.world.level1;
 
+import bd.historicalgame.assets.FontManager;
 import bd.historicalgame.game.GameConfig;
 import bd.historicalgame.player.Player;
 
@@ -10,6 +11,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
 import com.badlogic.gdx.graphics.VertexAttributes;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.g3d.Attribute;
@@ -70,8 +72,36 @@ public class Level1World implements Disposable {
     // =========================================================
 
     private final SpriteBatch spriteBatch;
-    private final BitmapFont font;
+    private final FontManager fontManager;
     private final ShapeRenderer hudShapes;
+
+    /**
+     * Reference pixel size for a HUD "scale" of 1.0, mirroring
+     * UIManager's approach: every size actually used is rendered
+     * by FreeType at its exact pixel size instead of being
+     * stretched from one small bitmap font (which is what made the
+     * HUD text blurry).
+     */
+    private static final float HUD_BASE_FONT_PX = 18f;
+    private static final int HUD_MIN_FONT_PX = 12;
+    private static final int HUD_MAX_FONT_PX = 96;
+
+    /**
+     * Returns a crisp font for the given HUD "scale" (same
+     * convention the old {@code font.getData().setScale(scale)}
+     * calls used), already sized for the current window height.
+     */
+    private BitmapFont hudFont(float scale) {
+
+        int pixelSize =
+            MathUtils.clamp(
+                Math.round(HUD_BASE_FONT_PX * scale),
+                HUD_MIN_FONT_PX,
+                HUD_MAX_FONT_PX
+            );
+
+        return fontManager.get(pixelSize);
+    }
 
     // =========================================================
     // CAMERA
@@ -125,10 +155,13 @@ public class Level1World implements Disposable {
     private final Vector3[] missionTargets = {
 
         // Mission 1
+        // Just in front of the entrance stairs - reachable on
+        // foot now that Curzon Hall's walls actually block
+        // walking through them.
         new Vector3(
             0f,
             1f,
-            -10f
+            -6.0f
         ),
 
         // Mission 2
@@ -146,10 +179,12 @@ public class Level1World implements Disposable {
         ),
 
         // Mission 4
+        // Just south of the library entrance - reachable on foot
+        // now that its walls actually block walking through them.
         new Vector3(
             -18f,
             1f,
-            -3f
+            1.5f
         ),
 
         // Mission 5
@@ -187,6 +222,12 @@ public class Level1World implements Disposable {
     };
 
     private static final float MISSION_DISTANCE = 3.2f;
+
+    // TSC roof: the building body is 4.5f high and the roof slab
+    // raises the walkable top to approximately 4.825f.
+    private static final float TSC_ROOF_Y = 4.825f;
+    private static final float TSC_PLAYER_CENTER_Y = TSC_ROOF_Y + 0.75f;
+    private static final float TSC_ROOF_TOLERANCE = 0.30f;
 
     // =========================================================
     // OBJECTIVE MARKER
@@ -253,8 +294,8 @@ public class Level1World implements Disposable {
         spriteBatch =
             new SpriteBatch();
 
-        font =
-            new BitmapFont();
+        fontManager =
+            new FontManager();
 
         hudShapes =
             new ShapeRenderer();
@@ -432,15 +473,17 @@ public class Level1World implements Disposable {
                 ? MathUtils.sin(totalTime * 10f) * 0.035f
                 : 0f;
 
+        float y = player.getY();
+
         playerBody.transform.setToTranslation(
             x,
-            1.0f + bob,
+            y + bob,
             z
         );
 
         playerHead.transform.setToTranslation(
             x,
-            2.05f + bob,
+            y + 1.05f + bob,
             z
         );
 
@@ -1803,8 +1846,13 @@ public class Level1World implements Disposable {
                 missionIndex
             ];
 
+        float baseY =
+            missionIndex == 2
+                ? 6.35f
+                : 3.8f;
+
         float y =
-            3.8f +
+            baseY +
             MathUtils.sin(
                 totalTime * 3f
             ) * 0.5f;
@@ -1829,53 +1877,106 @@ public class Level1World implements Disposable {
     private void registerCollisions() {
 
         /*
-         * Curzon Hall.
+         * Curzon Hall - main body.
+         * Rendered as a 22x7 box centered at (0, -13).
          */
         player.addCollision(
             -11f,
             -16.5f,
             22f,
-            5f
+            7f,
+            6.0f
         );
 
         /*
-         * Left academic building.
+         * Curzon Hall - entrance block.
+         * Rendered as a 7x4 box centered at (0, -8.8), taller
+         * than the main body, protruding toward the courtyard.
          */
         player.addCollision(
-            -23f,
-            -6.5f,
-            12f,
-            7f
+            -3.5f,
+            -10.8f,
+            7f,
+            4f,
+            7.5f
         );
 
         /*
-         * Right academic building.
+         * TSC. The roof is a real jumpable platform.
+         * Rendered as a 12x7 box centered at (18, -3).
          */
         player.addCollision(
-            17f,
+            12f,
             -6.5f,
             12f,
-            7f
+            7f,
+            TSC_ROOF_Y
         );
 
         /*
          * Library.
+         * Rendered as a 12x7 box centered at (-18, -3).
          */
         player.addCollision(
             -24f,
             -6.5f,
             12f,
-            7f
+            7f,
+            4.5f
         );
 
         /*
-         * TSC.
+         * The four academic buildings (createAcademicBuildings()),
+         * each a 10x6 box. These previously had NO collision
+         * registered at all, which is why the player could walk
+         * straight through them.
          */
+        registerAcademicBuilding(-20f, 11f);
+        registerAcademicBuilding(20f, 11f);
+        registerAcademicBuilding(-26f, -13f);
+        registerAcademicBuilding(26f, -13f);
+
+        /*
+         * Main gate pillars.
+         * Rendered as 2.2x2.2 columns at (-10, 16) and (10, 16).
+         */
+        registerGatePillar(-10f, 16f);
+        registerGatePillar(10f, 16f);
+    }
+
+    /**
+     * Registers a collision box for one academic building, given
+     * its center (matching the x/z passed to addBuilding() in
+     * createAcademicBuildings()). The building itself is a 10x6
+     * box with its roof topping out around y=4.3.
+     */
+    private void registerAcademicBuilding(
+        float centerX,
+        float centerZ
+    ) {
         player.addCollision(
-            12f,
-            -6.5f,
-            12f,
-            7f
+            centerX - 5f,
+            centerZ - 3f,
+            10f,
+            6f,
+            4.0f
+        );
+    }
+
+    /**
+     * Registers a small collision box for one gate pillar, given
+     * its center (matching the x/z passed to createGatePillar()).
+     */
+    private void registerGatePillar(
+        float centerX,
+        float centerZ
+    ) {
+        player.addCollision(
+            centerX - 1.1f,
+            centerZ - 1.1f,
+            2.2f,
+            2.2f,
+            7.0f
         );
     }
 
@@ -1933,11 +2034,19 @@ public class Level1World implements Disposable {
                 dz * dz
             );
 
-        if (
-            distance <=
-            MISSION_DISTANCE
-        ) {
+        boolean insideObjectiveRadius =
+            distance <= MISSION_DISTANCE;
 
+        boolean tscRoofReached =
+            missionIndex != 2
+            || (
+                player.isGrounded()
+                &&
+                player.getY() >=
+                    TSC_PLAYER_CENTER_Y - TSC_ROOF_TOLERANCE
+            );
+
+        if (insideObjectiveRadius && tscRoofReached) {
             completeCurrentMission();
         }
     }
@@ -2048,60 +2157,99 @@ public class Level1World implements Disposable {
         hudShapes.end();
 
         spriteBatch.begin();
-        font.setColor(Color.WHITE);
 
         float titleScale = 1.45f * scale;
         float bodyScale = 0.92f * scale;
         float smallScale = 0.78f * scale;
 
-        font.getData().setScale(titleScale);
+        BitmapFont titleFont = hudFont(titleScale);
+        titleFont.setColor(Color.WHITE);
         String title = levelCompleted
             ? "LEVEL 1 COMPLETE"
             : "MISSION " + (missionIndex + 1) + "  •  " + missionTitles[missionIndex];
-        font.draw(spriteBatch, title, 48f * scale, h - 50f * scale);
+        titleFont.draw(spriteBatch, title, 48f * scale, h - 50f * scale);
 
-        font.getData().setScale(bodyScale);
+        BitmapFont bodyFont = hudFont(bodyScale);
+        bodyFont.setColor(Color.WHITE);
+
         if (!levelCompleted) {
-            font.draw(spriteBatch, missionDescriptions[missionIndex], 48f * scale, h - 84f * scale);
+            bodyFont.draw(spriteBatch, missionDescriptions[missionIndex], 48f * scale, h - 84f * scale);
 
             Vector3 target = missionTargets[missionIndex];
             float dx = target.x - player.getX();
             float dz = target.z - player.getZ();
             float distance = (float)Math.sqrt(dx * dx + dz * dz);
-            font.draw(spriteBatch, String.format("OBJECTIVE   %.1f m", distance), 48f * scale, h - 119f * scale);
+            bodyFont.draw(spriteBatch, String.format("OBJECTIVE   %.1f m", distance), 48f * scale, h - 119f * scale);
 
-            font.getData().setScale(smallScale);
-            font.draw(spriteBatch, "NEXT: " + getDirection(dx, dz), 48f * scale, h - 145f * scale);
+            BitmapFont smallFont = hudFont(smallScale);
+            smallFont.setColor(Color.WHITE);
+            smallFont.draw(spriteBatch, "NEXT: " + getDirection(dx, dz), 48f * scale, h - 145f * scale);
+
+            if (missionIndex == 2) {
+                BitmapFont rooftopFont = hudFont(0.74f * scale);
+                rooftopFont.setColor(Color.valueOf("6FE7E0"));
+                rooftopFont.draw(
+                    spriteBatch,
+                    "ROOFTOP OBJECTIVE  •  SHIFT / SPACE TO JUMP",
+                    48f * scale,
+                    h - 170f * scale
+                );
+            }
 
             // Center compass/waypoint label.
-            font.getData().setScale(bodyScale);
             String arrow = getCameraRelativeArrow(target);
-            float arrowWidth = font.getData().capHeight * 2f;
-            font.draw(spriteBatch, arrow, w / 2f - arrowWidth, 93f * scale);
+            float arrowWidth = bodyFont.getData().capHeight * 2f;
+            bodyFont.draw(spriteBatch, arrow, w / 2f - arrowWidth, 93f * scale);
         } else {
-            font.getData().setScale(bodyScale);
-            font.draw(spriteBatch, "Campus exploration completed.", 48f * scale, h - 92f * scale);
-            font.getData().setScale(smallScale);
-            font.draw(spriteBatch, "Press ESC to open the pause menu.", 48f * scale, h - 125f * scale);
+            bodyFont.draw(spriteBatch, "Campus exploration completed.", 48f * scale, h - 92f * scale);
+
+            BitmapFont smallFont = hudFont(smallScale);
+            smallFont.setColor(Color.WHITE);
+            smallFont.draw(spriteBatch, "Press ESC to open the pause menu.", 48f * scale, h - 125f * scale);
         }
 
-        font.getData().setScale(smallScale);
-        font.draw(spriteBatch, "W A S D  MOVE     MOUSE  CAMERA     R  RESET CAMERA     ESC  PAUSE", 28f * scale, 28f * scale);
+        BitmapFont hintFont = hudFont(smallScale);
+        hintFont.setColor(Color.WHITE);
 
-        renderMiniMap();
+        String controlsHint =
+            "W A S D  MOVE     SHIFT / SPACE  JUMP     MOUSE  CAMERA     R  RESET     ESC  PAUSE";
+
+        GlyphLayout controlsLayout =
+            new GlyphLayout(hintFont, controlsHint);
+
+        hintFont.draw(
+            spriteBatch,
+            controlsHint,
+            w - controlsLayout.width - 28f * scale,
+            28f * scale
+        );
 
         if (levelCompleted) {
-            font.getData().setScale(2.4f * scale);
+            BitmapFont completeFont = hudFont(2.4f * scale);
+            completeFont.setColor(Color.WHITE);
             String complete = "LEVEL 1 COMPLETE";
-            float tw = font.getRegion().getRegionWidth() * 0f;
-            font.draw(spriteBatch, complete, w / 2f - 190f * scale, h / 2f + 30f * scale);
-            font.getData().setScale(1.0f * scale);
-            font.draw(spriteBatch, "Campus exploration completed.", w / 2f - 150f * scale, h / 2f - 20f * scale);
+            GlyphLayout completeLayout = new GlyphLayout(completeFont, complete);
+            completeFont.draw(spriteBatch, complete, w / 2f - completeLayout.width / 2f, h / 2f + 30f * scale);
+
+            BitmapFont completeBodyFont = hudFont(1.0f * scale);
+            completeBodyFont.setColor(Color.WHITE);
+            GlyphLayout completeBodyLayout = new GlyphLayout(completeBodyFont, "Campus exploration completed.");
+            completeBodyFont.draw(
+                spriteBatch,
+                "Campus exploration completed.",
+                w / 2f - completeBodyLayout.width / 2f,
+                h / 2f - 20f * scale
+            );
         }
 
         spriteBatch.end();
-        font.setColor(Color.WHITE);
-        font.getData().setScale(1f);
+
+        /*
+         * Self-contained: manages its own ShapeRenderer and
+         * SpriteBatch begin/end pairs, so it must run after
+         * the main HUD batch above has been closed.
+         */
+        renderMiniMap();
     }
 
     private String getCameraRelativeArrow(Vector3 target) {
@@ -2157,82 +2305,171 @@ public class Level1World implements Disposable {
     }
 
     // =========================================================
-    // MINI MAP
+    // MINI MAP (RADAR)
     // =========================================================
 
+    private static final float MINIMAP_RADIUS = 76f;
+    private static final float MINIMAP_RANGE = 32f;
+
+    /**
+     * Circular radar in the top-right corner. Rotates with the
+     * camera so the player's current facing direction always
+     * points to the top of the disc (same convention as the
+     * on-screen directional arrow), with a dot per mission
+     * target and a highlighted dot for the current objective.
+     */
     private void renderMiniMap() {
 
+        float w = Gdx.graphics.getWidth();
+        float h = Gdx.graphics.getHeight();
+
+        float scale = Math.max(1f, h / 1080f);
+
+        float radius = MINIMAP_RADIUS * scale;
+        float margin = 26f * scale;
+
+        float centerX = w - margin - radius;
+        float centerY = h - margin - radius;
+
         /*
-         * Simple text-based mini-map.
-         *
-         * Kept lightweight so it works without textures.
+         * Same forward/right convention as
+         * getCameraRelativeArrow(), so the radar and the
+         * on-screen compass arrow always agree.
          */
-        float x =
-            Gdx.graphics.getWidth()
-                - 230f;
+        float yawRad =
+            cameraYaw * MathUtils.degreesToRadians;
 
-        float y =
-            Gdx.graphics.getHeight()
-                - 35f;
+        float forwardX = -MathUtils.sin(yawRad);
+        float forwardZ = -MathUtils.cos(yawRad);
 
-        font.getData().setScale(0.85f);
+        float rightX = -forwardZ;
+        float rightZ = forwardX;
 
-        font.draw(
-            spriteBatch,
-            "CAMPUS MAP",
-            x,
-            y
+        hudShapes.setProjectionMatrix(
+            spriteBatch.getProjectionMatrix()
         );
 
-        font.getData().setScale(0.68f);
+        hudShapes.begin(ShapeRenderer.ShapeType.Filled);
 
-        font.draw(
-            spriteBatch,
-            "[ CURZON HALL ]",
-            x,
-            y - 28f
+        /*
+         * Ring border: a slightly larger gold disc behind a
+         * smaller dark disc, leaving a thin gold rim visible.
+         */
+        hudShapes.setColor(0.90f, 0.72f, 0.25f, 0.55f);
+        hudShapes.circle(centerX, centerY, radius + 3f * scale, 48);
+
+        hudShapes.setColor(0.03f, 0.045f, 0.055f, 0.90f);
+        hudShapes.circle(centerX, centerY, radius, 48);
+
+        /*
+         * Mission markers.
+         */
+        for (int i = 0; i < missionTargets.length; i++) {
+
+            Vector3 target = missionTargets[i];
+
+            float dx = target.x - player.getX();
+            float dz = target.z - player.getZ();
+
+            float worldDist =
+                (float) Math.sqrt(dx * dx + dz * dz);
+
+            float mapX;
+            float mapY;
+
+            if (worldDist < 0.001f) {
+
+                mapX = 0f;
+                mapY = 0f;
+
+            } else {
+
+                float clampedDist =
+                    Math.min(worldDist, MINIMAP_RANGE);
+
+                float mapDist =
+                    (clampedDist / MINIMAP_RANGE)
+                        * (radius - 8f * scale);
+
+                float mapRight =
+                    (dx * rightX + dz * rightZ) / worldDist;
+
+                float mapUp =
+                    (dx * forwardX + dz * forwardZ) / worldDist;
+
+                mapX = mapRight * mapDist;
+                mapY = mapUp * mapDist;
+            }
+
+            boolean isCurrent =
+                i == missionIndex && !levelCompleted;
+
+            boolean isPast =
+                i < missionIndex;
+
+            if (isCurrent) {
+                hudShapes.setColor(0.90f, 0.72f, 0.25f, 1f);
+            } else if (isPast) {
+                hudShapes.setColor(0.6f, 0.6f, 0.6f, 0.55f);
+            } else {
+                hudShapes.setColor(0.6f, 0.6f, 0.6f, 0.35f);
+            }
+
+            hudShapes.circle(
+                centerX + mapX,
+                centerY + mapY,
+                (isCurrent ? 5f : 3.5f) * scale,
+                16
+            );
+        }
+
+        /*
+         * Player marker, fixed at the radar's center. Since the
+         * radar rotates with the camera, this always points up.
+         */
+        hudShapes.setColor(0.94f, 0.96f, 0.98f, 1f);
+
+        float triSize = 7f * scale;
+
+        hudShapes.triangle(
+            centerX, centerY + triSize,
+            centerX - triSize * 0.65f, centerY - triSize * 0.55f,
+            centerX + triSize * 0.65f, centerY - triSize * 0.55f
         );
 
-        font.draw(
+        hudShapes.end();
+
+        /*
+         * Crisp thin ring outline over the filled discs.
+         */
+        hudShapes.begin(ShapeRenderer.ShapeType.Line);
+        hudShapes.setColor(0.90f, 0.72f, 0.25f, 0.9f);
+        hudShapes.circle(centerX, centerY, radius, 48);
+        hudShapes.end();
+
+        String label =
+            levelCompleted
+                ? "CAMPUS MAP"
+                : missionTitles[
+                    Math.min(missionIndex, missionTitles.length - 1)
+                ];
+
+        BitmapFont labelFont = hudFont(0.62f * scale);
+        labelFont.setColor(Color.valueOf("E8BC55"));
+
+        GlyphLayout labelLayout =
+            new GlyphLayout(labelFont, label);
+
+        spriteBatch.begin();
+
+        labelFont.draw(
             spriteBatch,
-            "       │",
-            x,
-            y - 48f
+            label,
+            centerX - labelLayout.width / 2f,
+            centerY - radius - 10f * scale
         );
 
-        font.draw(
-            spriteBatch,
-            "  LIBRARY ─ LAWN ─ TSC",
-            x,
-            y - 68f
-        );
-
-        font.draw(
-            spriteBatch,
-            "       │",
-            x,
-            y - 88f
-        );
-
-        font.draw(
-            spriteBatch,
-            "    [ MAIN GATE ]",
-            x,
-            y - 108f
-        );
-
-        font.draw(
-            spriteBatch,
-            "Objective: "
-                + missionTitles[
-                    Math.min(
-                        missionIndex,
-                        missionTitles.length - 1
-                    )
-                ],
-            x,
-            y - 140f
-        );
+        spriteBatch.end();
     }
 
     // =========================================================
@@ -2274,8 +2511,8 @@ public class Level1World implements Disposable {
             spriteBatch.dispose();
         }
 
-        if (font != null) {
-            font.dispose();
+        if (fontManager != null) {
+            fontManager.dispose();
         }
 
         if (hudShapes != null) {
