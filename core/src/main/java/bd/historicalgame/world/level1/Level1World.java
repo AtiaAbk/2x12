@@ -86,7 +86,25 @@ public class Level1World implements Disposable {
     private static final float CAMERA_HEIGHT = 7.5f;
     private static final float CAMERA_DISTANCE = 13f;
 
+    private static final float CAMERA_DEFAULT_X = 0f;
+    private static final float CAMERA_DEFAULT_Y = 8f;
+    private static final float CAMERA_DEFAULT_Z = 23f;
+    private static final float CAMERA_DEFAULT_YAW = 0f;
+    private static final float CAMERA_DEFAULT_PITCH = -16.9f;
+
+    private static final float CAMERA_MOUSE_SENSITIVITY = 0.18f;
+    private static final float CAMERA_MIN_PITCH = -75f;
+    private static final float CAMERA_MAX_PITCH = 75f;
+
     private static final float CAMERA_SMOOTH = 5.5f;
+
+    private float cameraYaw = CAMERA_DEFAULT_YAW;
+    private float cameraPitch = CAMERA_DEFAULT_PITCH;
+
+    private final Vector3 cameraForward = new Vector3();
+    private final Vector3 cameraRight = new Vector3();
+
+    private boolean cameraWasReset = false;
 
     // =========================================================
     // PLAYER
@@ -311,23 +329,12 @@ public class Level1World implements Disposable {
                 height
             );
 
-        camera.position.set(
-            0f,
-            8f,
-            23f
-        );
+        camera.near = GameConfig.CAMERA_NEAR;
+        camera.far = GameConfig.CAMERA_FAR;
 
-        camera.near = 0.1f;
+        resetCamera();
 
-        camera.far = 300f;
-
-        camera.lookAt(
-            0f,
-            1f,
-            0f
-        );
-
-        camera.update();
+        Gdx.input.setCursorCatched(true);
     }
 
     // =========================================================
@@ -470,32 +477,99 @@ public class Level1World implements Disposable {
     // CAMERA FOLLOW
     // =========================================================
 
+    private void updateCameraInput() {
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            resetCamera();
+            updateCameraBasis();
+            return;
+        }
+
+        if (Gdx.input.isCursorCatched()) {
+            cameraYaw -=
+                Gdx.input.getDeltaX() * CAMERA_MOUSE_SENSITIVITY;
+
+            cameraPitch -=
+                Gdx.input.getDeltaY() * CAMERA_MOUSE_SENSITIVITY;
+
+            cameraPitch = MathUtils.clamp(
+                cameraPitch,
+                CAMERA_MIN_PITCH,
+                CAMERA_MAX_PITCH
+            );
+        }
+
+        updateCameraBasis();
+    }
+
+    private void resetCamera() {
+
+        cameraYaw = CAMERA_DEFAULT_YAW;
+        cameraPitch = CAMERA_DEFAULT_PITCH;
+
+        camera.position.set(
+            CAMERA_DEFAULT_X,
+            CAMERA_DEFAULT_Y,
+            CAMERA_DEFAULT_Z
+        );
+
+        camera.lookAt(
+            0f,
+            1f,
+            0f
+        );
+
+        camera.update();
+        cameraWasReset = true;
+    }
+
+    private void updateCameraBasis() {
+
+        float yawRadians =
+            cameraYaw * MathUtils.degreesToRadians;
+
+        cameraForward.set(
+            MathUtils.sin(yawRadians),
+            0f,
+            -MathUtils.cos(yawRadians)
+        ).nor();
+
+        cameraRight.set(
+            MathUtils.cos(yawRadians),
+            0f,
+            MathUtils.sin(yawRadians)
+        ).nor();
+    }
+
     private void updateCamera(float delta) {
 
         if (player == null) {
             return;
         }
 
-        Vector3 movement =
-            player.getMovementDirection();
+        if (cameraWasReset) {
+            cameraWasReset = false;
+            return;
+        }
 
-        /*
-         * Camera follows from behind the player.
-         */
-        desiredCameraPosition.set(
-            player.getX()
-                - movement.x * CAMERA_DISTANCE,
-
-            player.getY()
-                + CAMERA_HEIGHT,
-
+        cameraLookAt.set(
+            player.getX(),
+            player.getY() + 1.1f,
             player.getZ()
-                - movement.z * CAMERA_DISTANCE
         );
 
-        /*
-         * Smooth interpolation.
-         */
+        float pitchRadians =
+            cameraPitch * MathUtils.degreesToRadians;
+
+        float horizontalDistance =
+            CAMERA_DISTANCE * MathUtils.cos(pitchRadians);
+
+        desiredCameraPosition.set(
+            cameraLookAt.x - cameraForward.x * horizontalDistance,
+            cameraLookAt.y - CAMERA_DISTANCE * MathUtils.sin(pitchRadians),
+            cameraLookAt.z - cameraForward.z * horizontalDistance
+        );
+
         float alpha =
             1f -
             (float)Math.exp(
@@ -507,16 +581,11 @@ public class Level1World implements Disposable {
             alpha
         );
 
-        cameraLookAt.set(
-            player.getX(),
-            player.getY() + 1.1f,
-            player.getZ()
-        );
+        Vector3 lookDirection =
+            cameraLookAt.cpy().sub(camera.position).nor();
 
-        camera.lookAt(
-            cameraLookAt
-        );
-
+        camera.direction.set(lookDirection);
+        camera.up.set(Vector3.Y);
         camera.update();
     }
 
@@ -1853,7 +1922,13 @@ public class Level1World implements Disposable {
 
         if (!levelCompleted) {
 
-            player.update(delta);
+            updateCameraInput();
+
+            player.update(
+                delta,
+                cameraForward,
+                cameraRight
+            );
 
             updatePlayerModel();
 

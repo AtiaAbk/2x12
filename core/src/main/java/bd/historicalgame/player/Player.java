@@ -163,7 +163,15 @@ public class Player {
      * A = left
      * D = right
      */
-    public void update(float delta) {
+    /**
+     * Updates player movement using camera-relative horizontal directions.
+     * The supplied directions must have no vertical component.
+     */
+    public void update(
+        float delta,
+        Vector3 cameraForward,
+        Vector3 cameraRight
+    ) {
 
         /*
          * Prevent very large frame jumps.
@@ -176,62 +184,42 @@ public class Player {
         // INPUT
         // -----------------------------------------------------
 
-        float inputX = 0f;
-        float inputZ = 0f;
+        float forwardInput = 0f;
+        float rightInput = 0f;
 
-        if (
-            Gdx.input.isKeyPressed(
-                Input.Keys.W
-            )
-        ) {
-
-            inputZ -= 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
+            forwardInput += 1f;
         }
 
-        if (
-            Gdx.input.isKeyPressed(
-                Input.Keys.S
-            )
-        ) {
-
-            inputZ += 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
+            forwardInput -= 1f;
         }
 
-        if (
-            Gdx.input.isKeyPressed(
-                Input.Keys.A
-            )
-        ) {
-
-            inputX -= 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
+            rightInput -= 1f;
         }
 
-        if (
-            Gdx.input.isKeyPressed(
-                Input.Keys.D
-            )
-        ) {
-
-            inputX += 1f;
+        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
+            rightInput += 1f;
         }
 
-        // -----------------------------------------------------
-        // NORMALIZE DIAGONAL INPUT
-        // -----------------------------------------------------
+        float inputX =
+            cameraForward.x * forwardInput +
+            cameraRight.x * rightInput;
 
-        if (
-            inputX != 0f &&
-            inputZ != 0f
-        ) {
+        float inputZ =
+            cameraForward.z * forwardInput +
+            cameraRight.z * rightInput;
 
-            float length =
-                (float) Math.sqrt(
-                    inputX * inputX +
-                    inputZ * inputZ
-                );
+        float inputLength =
+            (float) Math.sqrt(
+                inputX * inputX +
+                inputZ * inputZ
+            );
 
-            inputX /= length;
-            inputZ /= length;
+        if (inputLength > 1f) {
+            inputX /= inputLength;
+            inputZ /= inputLength;
         }
 
         // -----------------------------------------------------
