@@ -1284,602 +1284,130 @@ public class Level1World implements Disposable {
         long attributes
     ) {
 
-        // =========================================================
-        // CURZON HALL
-        // Reference-inspired wide historical facade
-        // =========================================================
-
-        // ---------------------------------------------------------
-        // MAIN LONG WING
-        // ---------------------------------------------------------
-
+        /*
+         * Main red-brick body.
+         */
         addBox(
             builder,
             attributes,
-            26f,
-            5.8f,
-            7.2f,
+            22f,
+            6f,
+            7f,
             BRICK,
             0f,
-            3.0f,
+            3f,
             -13f
         );
 
-        // Lower stone/cream base
+        /*
+         * Central entrance.
+         */
         addBox(
             builder,
             attributes,
-            26.4f,
-            0.55f,
+            7f,
             7.5f,
-            CREAM,
-            0f,
-            0.48f,
-            -13f
-        );
-
-        // Long upper cornice
-        addBox(
-            builder,
-            attributes,
-            26.5f,
-            0.38f,
-            7.55f,
-            CREAM,
-            0f,
-            6.0f,
-            -13f
-        );
-
-        // ---------------------------------------------------------
-        // LEFT PROJECTING WING
-        // ---------------------------------------------------------
-
-        addBox(
-            builder,
-            attributes,
-            5.2f,
-            7.0f,
-            7.8f,
-            BRICK_DARK,
-            -10.2f,
-            3.5f,
-            -13f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            5.6f,
-            0.38f,
-            8.2f,
-            CREAM,
-            -10.2f,
-            7.08f,
-            -13f
-        );
-
-        // ---------------------------------------------------------
-        // RIGHT PROJECTING WING
-        // ---------------------------------------------------------
-
-        addBox(
-            builder,
-            attributes,
-            5.2f,
-            7.0f,
-            7.8f,
-            BRICK_DARK,
-            10.2f,
-            3.5f,
-            -13f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            5.6f,
-            0.38f,
-            8.2f,
-            CREAM,
-            10.2f,
-            7.08f,
-            -13f
-        );
-
-        // ---------------------------------------------------------
-        // CENTRAL ENTRANCE MASS
-        // ---------------------------------------------------------
-
-        addBox(
-            builder,
-            attributes,
-            8.2f,
-            7.6f,
-            4.7f,
+            4f,
             BRICK_DARK,
             0f,
-            3.8f,
+            3.75f,
             -8.8f
         );
 
-        // Central entrance upper ledge
+        /*
+         * Central tower.
+         */
         addBox(
             builder,
             attributes,
-            8.8f,
-            0.42f,
-            5.1f,
-            CREAM,
-            0f,
-            7.45f,
-            -8.8f
-        );
-
-        // ---------------------------------------------------------
-        // CENTRAL TALL TOWER
-        // ---------------------------------------------------------
-
-        addBox(
-            builder,
-            attributes,
-            5.6f,
-            10.8f,
-            5.0f,
+            4f,
+            10f,
+            4f,
             BRICK,
             0f,
-            5.4f,
+            7f,
             -13f
         );
 
-        // Tower lower trim
-        addBox(
-            builder,
-            attributes,
-            6.0f,
-            0.38f,
-            5.35f,
-            CREAM,
+        /*
+         * Tower roof.
+         */
+        Model roof =
+            builder.createCone(
+                3.3f,
+                3.8f,
+                3.3f,
+                4,
+                material(ROOF),
+                attributes
+            );
+
+        models.add(roof);
+
+        ModelInstance roofInstance =
+            new ModelInstance(roof);
+
+        roofInstance.transform.setToTranslation(
             0f,
-            2.15f,
+            12.8f,
             -13f
         );
 
-        // Tower upper cornice
-        addBox(
-            builder,
-            attributes,
-            6.15f,
-            0.48f,
-            5.45f,
-            CREAM,
-            0f,
-            10.75f,
-            -13f
-        );
+        instances.add(roofInstance);
 
-        // ---------------------------------------------------------
-        // CENTRAL POINTED ROOF / GABLE
-        // ---------------------------------------------------------
-
-        Model centralRoof = builder.createCone(
-            4.25f,
-            4.6f,
-            4.25f,
-            4,
-            material(ROOF),
-            attributes
-        );
-
-        models.add(centralRoof);
-
-        ModelInstance centralRoofInstance =
-            new ModelInstance(centralRoof);
-
-        centralRoofInstance.transform.setToTranslation(
-            0f,
-            13.25f,
-            -13f
-        );
-
-        instances.add(centralRoofInstance);
-
-        // Small cream cap
-        addBox(
-            builder,
-            attributes,
-            1.25f,
-            0.5f,
-            1.25f,
-            CREAM,
-            0f,
-            15.0f,
-            -13f
-        );
-
-        // ---------------------------------------------------------
-        // SIDE TOWERS
-        // ---------------------------------------------------------
-
+        /*
+         * Side towers.
+         */
         createTower(
             builder,
             attributes,
-            -10.0f,
+            -9f,
             -13f
         );
 
         createTower(
             builder,
             attributes,
-            10.0f,
+            9f,
             -13f
         );
 
-        // ---------------------------------------------------------
-        // SIDE TOWER DECORATIVE CAPS
-        // ---------------------------------------------------------
-
-        addBox(
+        /*
+         * Windows.
+         */
+        createWindowRow(
             builder,
             attributes,
-            4.6f,
-            0.42f,
-            4.6f,
-            CREAM,
-            -10f,
-            9.25f,
-            -13f
+            -7f,
+            -10f
         );
 
+        createWindowRow(
+            builder,
+            attributes,
+            7f,
+            -10f
+        );
+
+        /*
+         * Entrance stairs.
+         */
         addBox(
             builder,
             attributes,
-            4.6f,
-            0.42f,
-            4.6f,
-            CREAM,
             10f,
-            9.25f,
-            -13f
-        );
-
-        // ---------------------------------------------------------
-        // ROOF SECTIONS OVER SIDE WINGS
-        // ---------------------------------------------------------
-
-        addBox(
-            builder,
-            attributes,
-            7.0f,
-            0.5f,
-            8.0f,
-            ROOF,
-            -6.8f,
-            6.65f,
-            -13f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            7.0f,
-            0.5f,
-            8.0f,
-            ROOF,
-            6.8f,
-            6.65f,
-            -13f
-        );
-
-        // ---------------------------------------------------------
-        // FRONT ENTRANCE COLUMNS
-        // ---------------------------------------------------------
-
-        createCurzonColumn(
-            builder,
-            attributes,
-            -3.0f,
-            3.7f,
-            -6.35f
-        );
-
-        createCurzonColumn(
-            builder,
-            attributes,
-             3.0f,
-            3.7f,
-            -6.35f
-        );
-
-        // ---------------------------------------------------------
-        // ENTRANCE TOP
-        // ---------------------------------------------------------
-
-        addBox(
-            builder,
-            attributes,
-            7.0f,
-            0.4f,
-            0.65f,
-            CREAM,
-            0f,
-            7.15f,
-            -6.35f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            6.2f,
-            0.42f,
-            0.6f,
-            BRICK_DARK,
-            0f,
-            7.48f,
-            -6.35f
-        );
-
-        // ---------------------------------------------------------
-        // LARGE CENTRAL ENTRANCE
-        // ---------------------------------------------------------
-
-        addBox(
-            builder,
-            attributes,
-            3.1f,
-            4.0f,
-            0.22f,
-            Color.valueOf("30251F"),
-            0f,
-            2.35f,
-            -6.42f
-        );
-
-        // Door divisions
-        addBox(
-            builder,
-            attributes,
-            0.14f,
-            3.55f,
-            0.12f,
-            CREAM,
-            -1.42f,
-            2.35f,
-            -6.55f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            0.14f,
-            3.55f,
-            0.12f,
-            CREAM,
-            1.42f,
-            2.35f,
-            -6.55f
-        );
-
-        // ---------------------------------------------------------
-        // WIDE FRONT STAIRS
-        // ---------------------------------------------------------
-
-        addBox(
-            builder,
-            attributes,
-            11f,
-            0.28f,
-            3.5f,
+            0.25f,
+            3f,
             PATH_LIGHT,
             0f,
-            0.18f,
-            -7.55f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            9.2f,
             0.22f,
-            2.8f,
-            CREAM,
-            0f,
-            0.40f,
-            -7.10f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            7.4f,
-            0.18f,
-            2.1f,
-            PATH_LIGHT,
-            0f,
-            0.58f,
-            -6.75f
+            -7.5f
         );
     }
 
     // =========================================================
-    // CURZON COLUMN
+    // TOWER
     // =========================================================
-
-    private void createCurzonColumn(
-        ModelBuilder builder,
-        long attributes,
-        float x,
-        float y,
-        float z
-    ) {
-
-        Model column = builder.createCylinder(
-            0.72f,
-            5.6f,
-            0.72f,
-            16,
-            material(CREAM),
-            attributes
-        );
-
-        models.add(column);
-
-        ModelInstance instance =
-            new ModelInstance(column);
-
-        instance.transform.setToTranslation(
-            x,
-            y,
-            z
-        );
-
-        instances.add(instance);
-    }
-
-
-    // =========================================================
-    // DETAILED CURZON WINDOWS
-    // =========================================================
-
-    private void createDetailedCurzonWindows(
-        ModelBuilder builder,
-        long attributes,
-        float startX,
-        float z
-    ) {
-
-        for (int i = 0; i < 4; i++) {
-
-            float x = startX + (i * 3.15f);
-
-            createCurzonWindow(
-                builder,
-                attributes,
-                x,
-                3.25f,
-                z - 3.78f,
-                1.45f,
-                2f
-            );
-
-            createCurzonWindow(
-                builder,
-                attributes,
-                x,
-                5.25f,
-                z - 3.78f,
-                1.45f,
-                1.65f
-            );
-        }
-    }
-
-    // =========================================================
-    // CURZON WINDOW
-    // =========================================================
-
-    private void createCurzonWindow(
-        ModelBuilder builder,
-        long attributes,
-        float x,
-        float y,
-        float z,
-        float width,
-        float height
-    ) {
-
-        Color frame = CREAM;
-        Color glass = Color.valueOf("24343A");
-
-        // Glass
-        addBox(builder, attributes,
-            width, height, 0.16f,
-            glass,
-            x, y, z);
-
-        // Left frame
-        addBox(builder, attributes,
-            0.16f, height + 0.35f, 0.24f,
-            frame,
-            x - width * 0.48f,
-            y,
-            z - 0.04f);
-
-        // Right frame
-        addBox(builder, attributes,
-            0.16f, height + 0.35f, 0.24f,
-            frame,
-            x + width * 0.48f,
-            y,
-            z - 0.04f);
-
-        // Top frame
-        addBox(builder, attributes,
-            width + 0.35f, 0.18f, 0.24f,
-            frame,
-            x,
-            y + height * 0.50f,
-            z - 0.04f);
-
-        // Bottom frame
-        addBox(builder, attributes,
-            width + 0.35f, 0.18f, 0.24f,
-            frame,
-            x,
-            y - height * 0.50f,
-            z - 0.04f);
-
-        // Vertical mullion
-        addBox(builder, attributes,
-            0.10f, height, 0.28f,
-            frame,
-            x,
-            y,
-            z - 0.07f);
-
-        // Horizontal mullion
-        addBox(builder, attributes,
-            width, 0.10f, 0.28f,
-            frame,
-            x,
-            y,
-            z - 0.07f);
-    }
-
-    // =========================================================
-    // CURZON COLUMN
-    // =========================================================
-
-    private void createCurzonColumn(
-        ModelBuilder builder,
-        long attributes,
-        float x,
-        float y,
-        float z
-    ) {
-
-        Model column = builder.createCylinder(
-            0.72f,
-            5.6f,
-            0.72f,
-            16,
-            material(CREAM),
-            attributes
-        );
-
-        models.add(column);
-
-        ModelInstance instance =
-            new ModelInstance(column);
-
-        instance.transform.setToTranslation(
-            x, y, z
-        );
-
-        instances.add(instance);
-    }
-
-
 
     private void createTower(
         ModelBuilder builder,
