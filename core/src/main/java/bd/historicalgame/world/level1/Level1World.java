@@ -1850,35 +1850,6 @@ public class Level1World implements Disposable {
     // CURZON COLUMN
     // =========================================================
 
-    private void createCurzonColumn(
-        ModelBuilder builder,
-        long attributes,
-        float x,
-        float y,
-        float z
-    ) {
-
-        Model column = builder.createCylinder(
-            0.72f,
-            5.6f,
-            0.72f,
-            16,
-            material(CREAM),
-            attributes
-        );
-
-        models.add(column);
-
-        ModelInstance instance =
-            new ModelInstance(column);
-
-        instance.transform.setToTranslation(
-            x, y, z
-        );
-
-        instances.add(instance);
-    }
-
 
 
     private void createTower(
