@@ -93,11 +93,18 @@ public final class GameConfig {
     /**
      * Level 1 playable boundaries.
      */
-    public static final float LEVEL1_MIN_X = -28f;
-    public static final float LEVEL1_MAX_X = 28f;
+    /*
+     * Level 1 uses a large exploration area.
+     *
+     * The playable area is intentionally much larger than the
+     * current campus core so the player does not immediately
+     * encounter the world boundary.
+     */
+    public static final float LEVEL1_MIN_X = -70f;
+    public static final float LEVEL1_MAX_X = 70f;
 
-    public static final float LEVEL1_MIN_Z = -18f;
-    public static final float LEVEL1_MAX_Z = 18f;
+    public static final float LEVEL1_MIN_Z = -52f;
+    public static final float LEVEL1_MAX_Z = 52f;
 
     // =========================================================
     // LEVEL 1 OBJECTIVES

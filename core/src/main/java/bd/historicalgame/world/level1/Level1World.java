@@ -123,8 +123,14 @@ public class Level1World implements Disposable {
     private final Vector3 cameraLookAt =
         new Vector3();
 
-    private static final float CAMERA_HEIGHT = 7.5f;
-    private static final float CAMERA_DISTANCE = 13f;
+    /*
+     * Slightly wider third-person framing.
+     *
+     * This makes the player occupy less of the screen and gives
+     * the campus much more visual breathing room.
+     */
+    private static final float CAMERA_HEIGHT = 7.0f;
+    private static final float CAMERA_DISTANCE = 18f;
 
     private static final float CAMERA_SMOOTH = 5.5f;
 
@@ -366,7 +372,12 @@ public class Level1World implements Disposable {
             );
 
         camera.near = 0.1f;
-        camera.far = 300f;
+
+        /*
+         * Larger draw distance is required for the expanded
+         * Level 1 environment and future distant scenery.
+         */
+        camera.far = 650f;
         resetCamera();
     }
 
@@ -748,12 +759,19 @@ public class Level1World implements Disposable {
         long attributes
     ) {
 
+        /*
+         * Large campus terrain.
+         *
+         * The actual playable campus occupies the central region,
+         * while the extra terrain provides visual breathing room
+         * before the hidden world boundary.
+         */
         addBox(
             builder,
             attributes,
-            72f,
+            176f,
             0.35f,
-            52f,
+            140f,
             GRASS,
             0f,
             -0.2f,
@@ -761,14 +779,17 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Dark green outer border.
+         * Very large dark-green under-layer.
+         *
+         * This prevents the terrain from ending abruptly inside
+         * the camera's visible range.
          */
         addBox(
             builder,
             attributes,
-            72f,
+            178f,
             0.08f,
-            52f,
+            142f,
             GRASS_DARK,
             0f,
             0.01f,
@@ -1691,28 +1712,37 @@ public class Level1World implements Disposable {
         long attributes
     ) {
 
+        /*
+         * The campus boundary is now far away from the core
+         * exploration area.
+         *
+         * These walls are temporary structural boundaries. In the
+         * next environment pass they will be visually blended with
+         * trees, vegetation and atmospheric depth so the player
+         * cannot easily discover the world edge.
+         */
         addBox(
             builder,
             attributes,
-            70f,
+            160f,
             1.8f,
             0.5f,
             BRICK_DARK,
             0f,
             0.9f,
-            -24f
+            -58f
         );
 
         addBox(
             builder,
             attributes,
-            70f,
+            160f,
             1.8f,
             0.5f,
             BRICK_DARK,
             0f,
             0.9f,
-            24f
+            58f
         );
 
         addBox(
@@ -1720,9 +1750,9 @@ public class Level1World implements Disposable {
             attributes,
             0.5f,
             1.8f,
-            48f,
+            116f,
             BRICK_DARK,
-            -34f,
+            -78f,
             0.9f,
             0f
         );
@@ -1732,9 +1762,9 @@ public class Level1World implements Disposable {
             attributes,
             0.5f,
             1.8f,
-            48f,
+            116f,
             BRICK_DARK,
-            34f,
+            78f,
             0.9f,
             0f
         );
