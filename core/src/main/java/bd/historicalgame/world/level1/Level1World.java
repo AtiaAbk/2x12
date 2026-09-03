@@ -1602,7 +1602,166 @@ public class Level1World implements Disposable {
         System.out.println(
             "CURZON HALL: Correct architectural scale/massing created."
         );
-    }
+    
+        
+        // COMMIT_B_CENTRAL_THREE_WINDOWS
+        /*
+         * -----------------------------------------------------
+         * CENTRAL TOWER — THREE TALL UPPER WINDOWS
+         *
+         * Reference target:
+         *   - three vertically elongated openings
+         *   - center opening slightly dominant
+         *   - dark recessed interior
+         *   - aged cream masonry framing
+         *
+         * This commit intentionally does not add the final
+         * horseshoe/cusped arch geometry yet.
+         * -----------------------------------------------------
+         */
+
+        // Left window recess
+        addBox(
+            builder,
+            attributes,
+            2.4f,
+            5.2f,
+            0.18f,
+            Color.valueOf("30221E"),
+            -3.8f,
+            13.6f,
+            -20.08f
+        );
+
+        // Center window recess
+        addBox(
+            builder,
+            attributes,
+            2.8f,
+            5.8f,
+            0.18f,
+            Color.valueOf("241916"),
+            0f,
+            13.8f,
+            -20.08f
+        );
+
+        // Right window recess
+        addBox(
+            builder,
+            attributes,
+            2.4f,
+            5.2f,
+            0.18f,
+            Color.valueOf("30221E"),
+            3.8f,
+            13.6f,
+            -20.08f
+        );
+
+        // Cream vertical surrounds
+        addBox(
+            builder,
+            attributes,
+            0.32f,
+            5.8f,
+            0.24f,
+            CREAM,
+            -5.15f,
+            13.6f,
+            -20.18f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.32f,
+            5.8f,
+            0.24f,
+            CREAM,
+            -2.45f,
+            13.6f,
+            -20.18f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.34f,
+            6.2f,
+            0.24f,
+            CREAM,
+            -1.55f,
+            13.8f,
+            -20.18f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.34f,
+            6.2f,
+            0.24f,
+            CREAM,
+            1.55f,
+            13.8f,
+            -20.18f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.32f,
+            5.8f,
+            0.24f,
+            CREAM,
+            2.45f,
+            13.6f,
+            -20.18f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.32f,
+            5.8f,
+            0.24f,
+            CREAM,
+            5.15f,
+            13.6f,
+            -20.18f
+        );
+
+        // Lower sill band
+        addBox(
+            builder,
+            attributes,
+            11.0f,
+            0.35f,
+            0.25f,
+            CREAM,
+            0f,
+            10.75f,
+            -20.18f
+        );
+
+        // Upper horizontal frame
+        addBox(
+            builder,
+            attributes,
+            11.0f,
+            0.35f,
+            0.25f,
+            CREAM,
+            0f,
+            16.8f,
+            -20.18f
+        );
+
+        System.out.println(
+            "CURZON HALL: Central three upper windows added."
+        );
+}
 
     // =========================================================
     // CURZON COLUMN
