@@ -1761,6 +1761,196 @@ public class Level1World implements Disposable {
         System.out.println(
             "CURZON HALL: Central three upper windows added."
         );
+
+        
+        // COMMIT_C_MAIN_ENTRANCE
+        /*
+         * =====================================================
+         * CENTRAL MAIN ENTRANCE
+         *
+         * Target:
+         *   Width  ~= 4.2m
+         *   Height ~= 7.0m
+         *
+         * Visual structure:
+         *   - deep dark recess
+         *   - heavy vertical masonry frame
+         *   - curved horseshoe-style arch
+         *   - raised threshold
+         * =====================================================
+         */
+
+        final Color ENTRANCE_DARK =
+            Color.valueOf("211714");
+
+        final Color ARCH_CREAM =
+            Color.valueOf("C9B28A");
+
+        /*
+         * -----------------------------------------------------
+         * 1. DEEP DARK ENTRANCE CAVITY
+         *
+         * Slightly in front of the tower facade so it reads as
+         * a real recessed opening rather than a flat texture.
+         * -----------------------------------------------------
+         */
+        addBox(
+            builder,
+            attributes,
+            4.4f,
+            6.8f,
+            0.35f,
+            ENTRANCE_DARK,
+            0f,
+            3.65f,
+            -20.28f
+        );
+
+        /*
+         * -----------------------------------------------------
+         * 2. HEAVY SIDE PIERS
+         * -----------------------------------------------------
+         */
+        addBox(
+            builder,
+            attributes,
+            0.65f,
+            7.2f,
+            0.45f,
+            ARCH_CREAM,
+            -2.55f,
+            3.6f,
+            -20.48f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.65f,
+            7.2f,
+            0.45f,
+            ARCH_CREAM,
+            2.55f,
+            3.6f,
+            -20.48f
+        );
+
+        /*
+         * -----------------------------------------------------
+         * 3. ARCH SPRING BAND
+         * -----------------------------------------------------
+         */
+        addBox(
+            builder,
+            attributes,
+            5.6f,
+            0.38f,
+            0.48f,
+            ARCH_CREAM,
+            0f,
+            6.95f,
+            -20.50f
+        );
+
+        /*
+         * -----------------------------------------------------
+         * 4. CURVED ARCH VOUSSOIRS
+         *
+         * Individual masonry blocks are placed along a
+         * semicircular path. Each block is rotated so the
+         * entrance reads as a real curved masonry arch.
+         * -----------------------------------------------------
+         */
+
+        float archCenterY = 6.95f;
+        float radius = 2.15f;
+
+        float[] angles = {
+            20f, 40f, 60f, 80f,
+            100f, 120f, 140f, 160f
+        };
+
+        for (float angle : angles) {
+
+            float radians =
+                angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
+
+            float x =
+                radius * com.badlogic.gdx.math.MathUtils.cos(radians);
+
+            float y =
+                archCenterY +
+                radius * com.badlogic.gdx.math.MathUtils.sin(radians);
+
+            Model archBlock =
+                builder.createBox(
+                    0.72f,
+                    0.42f,
+                    0.48f,
+                    material(ARCH_CREAM),
+                    attributes
+                );
+
+            models.add(archBlock);
+
+            ModelInstance archInstance =
+                new ModelInstance(archBlock);
+
+            archInstance.transform.setToTranslation(
+                x,
+                y,
+                -20.52f
+            );
+
+            /*
+             * Tangential rotation makes the individual blocks
+             * follow the curved arch.
+             */
+            archInstance.transform.rotate(
+                Vector3.Z,
+                angle - 90f
+            );
+
+            instances.add(archInstance);
+        }
+
+        /*
+         * -----------------------------------------------------
+         * 5. CENTRAL KEYSTONE
+         * -----------------------------------------------------
+         */
+        addBox(
+            builder,
+            attributes,
+            0.85f,
+            0.65f,
+            0.55f,
+            ARCH_CREAM,
+            0f,
+            9.12f,
+            -20.54f
+        );
+
+        /*
+         * -----------------------------------------------------
+         * 6. ENTRANCE THRESHOLD
+         * -----------------------------------------------------
+         */
+        addBox(
+            builder,
+            attributes,
+            5.8f,
+            0.30f,
+            1.0f,
+            ARCH_CREAM,
+            0f,
+            0.18f,
+            -19.95f
+        );
+
+        System.out.println(
+            "CURZON HALL: Main recessed entrance and arch added."
+        );
 }
 
     // =========================================================
