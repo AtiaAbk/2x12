@@ -687,12 +687,17 @@ public class Level1World implements Disposable {
             attributes
         );
 
-        createCampusWalls(
+        createDecorativeFlowers(
             builder,
             attributes
         );
 
-        createDecorativeFlowers(
+        /*
+         * Distant scenery forms a visual continuation beyond the
+         * playable campus. The player cannot reach this scenery
+         * because Player has an invisible gameplay boundary.
+         */
+        createDistantEnvironment(
             builder,
             attributes
         );
@@ -766,12 +771,20 @@ public class Level1World implements Disposable {
          * while the extra terrain provides visual breathing room
          * before the hidden world boundary.
          */
+        /*
+         * Very large continuous terrain.
+         *
+         * The player is restricted to the central playable
+         * campus, but the visible ground continues far beyond
+         * that area. This prevents a small rectangular map edge
+         * from appearing in normal gameplay.
+         */
         addBox(
             builder,
             attributes,
-            176f,
+            360f,
             0.35f,
-            140f,
+            300f,
             GRASS,
             0f,
             -0.2f,
@@ -779,17 +792,17 @@ public class Level1World implements Disposable {
         );
 
         /*
-         * Very large dark-green under-layer.
+         * Large dark-green base layer.
          *
-         * This prevents the terrain from ending abruptly inside
-         * the camera's visible range.
+         * Extends beyond the primary terrain so there is no
+         * abrupt dark/empty border near the playable area.
          */
         addBox(
             builder,
             attributes,
-            178f,
+            365f,
             0.08f,
-            142f,
+            305f,
             GRASS_DARK,
             0f,
             0.01f,
@@ -1768,6 +1781,282 @@ public class Level1World implements Disposable {
             0.9f,
             0f
         );
+    }
+
+
+    // =========================================================
+    // DISTANT ENVIRONMENT / EDGE MASKING
+    // =========================================================
+
+    /**
+     * Creates a low-detail vegetation belt outside the main
+     * playable campus.
+     *
+     * Purpose:
+     * - Hide the finite playable boundary.
+     * - Prevent a visible rectangular map edge.
+     * - Make the campus feel larger than the actual gameplay area.
+     * - Create natural visual depth without expensive terrain
+     *   streaming or an infinite-world system.
+     *
+     * The player cannot reach these objects because Player uses
+     * an invisible gameplay boundary at approximately +/-70 X
+     * and +/-52 Z.
+     */
+    private void createDistantEnvironment(
+        ModelBuilder builder,
+        long attributes
+    ) {
+
+        /*
+         * Shared low-poly distant tree models.
+         *
+         * Reusing the same Model objects keeps memory and model
+         * creation cost much lower than calling createTree() for
+         * every distant tree.
+         */
+
+        Material distantTrunkMaterial =
+            material(
+                Color.valueOf("4A3829")
+            );
+
+        Material distantLeafMaterial =
+            material(
+                Color.valueOf("2F5130")
+            );
+
+        Model distantTrunk =
+            builder.createCylinder(
+                0.42f,
+                4.0f,
+                0.42f,
+                8,
+                distantTrunkMaterial,
+                attributes
+            );
+
+        Model distantLeaves =
+            builder.createSphere(
+                4.8f,
+                4.8f,
+                4.8f,
+                10,
+                10,
+                distantLeafMaterial,
+                attributes
+            );
+
+        models.add(distantTrunk);
+        models.add(distantLeaves);
+
+        /*
+         * Outer vegetation belt.
+         *
+         * Irregular spacing is intentional so the edge does not
+         * look like a mathematically perfect fence.
+         */
+
+        float[][] positions = {
+
+            // North
+            {-145f, -92f},
+            {-125f, -88f},
+            {-104f, -94f},
+            {-82f,  -90f},
+            {-58f,  -96f},
+            {-34f,  -91f},
+            {-8f,   -95f},
+            {18f,   -92f},
+            {44f,   -96f},
+            {70f,   -90f},
+            {96f,   -94f},
+            {122f,  -88f},
+            {145f,  -93f},
+
+            // South
+            {-145f, 92f},
+            {-120f, 96f},
+            {-96f,  90f},
+            {-70f,  95f},
+            {-45f,  91f},
+            {-18f,  96f},
+            {8f,    92f},
+            {34f,   97f},
+            {60f,   91f},
+            {86f,   95f},
+            {112f,  90f},
+            {140f,  96f},
+
+            // West
+            {-145f, -68f},
+            {-138f, -45f},
+            {-148f, -20f},
+            {-140f,   5f},
+            {-146f,  31f},
+            {-138f,  58f},
+            {-148f,  80f},
+
+            // East
+            {145f, -72f},
+            {140f, -48f},
+            {148f, -24f},
+            {142f,   2f},
+            {147f,  28f},
+            {139f,  55f},
+            {148f,  80f}
+        };
+
+        for (int i = 0; i < positions.length; i++) {
+
+            float x = positions[i][0];
+            float z = positions[i][1];
+
+            /*
+             * Slight deterministic variation.
+             *
+             * This keeps the vegetation from looking cloned while
+             * remaining completely reproducible between runs.
+             */
+            float scale =
+                0.85f +
+                ((i % 5) * 0.08f);
+
+            float y =
+                2.0f;
+
+            ModelInstance trunkInstance =
+                new ModelInstance(
+                    distantTrunk
+                );
+
+            trunkInstance.transform
+                .setToTranslation(
+                    x,
+                    y,
+                    z
+                );
+
+            trunkInstance.transform
+                .scale(
+                    scale,
+                    scale,
+                    scale
+                );
+
+            instances.add(
+                trunkInstance
+            );
+
+            ModelInstance leavesInstance =
+                new ModelInstance(
+                    distantLeaves
+                );
+
+            leavesInstance.transform
+                .setToTranslation(
+                    x,
+                    y + 3.8f * scale,
+                    z
+                );
+
+            leavesInstance.transform
+                .scale(
+                    scale,
+                    scale,
+                    scale
+                );
+
+            instances.add(
+                leavesInstance
+            );
+        }
+
+        /*
+         * Secondary vegetation layer.
+         *
+         * These smaller clusters fill visual gaps between the
+         * main distant trees without creating a dense forest.
+         */
+        Model shrub =
+            builder.createSphere(
+                2.2f,
+                1.8f,
+                2.2f,
+                8,
+                8,
+                material(
+                    Color.valueOf("385C36")
+                ),
+                attributes
+            );
+
+        models.add(shrub);
+
+        float[][] shrubPositions = {
+
+            {-118f, -72f},
+            {-92f, -78f},
+            {-66f, -74f},
+            {-40f, -82f},
+            {-14f, -76f},
+            {12f, -80f},
+            {38f, -74f},
+            {64f, -82f},
+            {90f, -76f},
+            {116f, -72f},
+
+            {-116f, 74f},
+            {-90f, 80f},
+            {-62f, 76f},
+            {-36f, 82f},
+            {-10f, 76f},
+            {16f, 82f},
+            {42f, 76f},
+            {68f, 82f},
+            {94f, 76f},
+            {120f, 80f},
+
+            {-118f, -46f},
+            {-124f, -18f},
+            {-120f, 12f},
+            {-124f, 40f},
+
+            {118f, -50f},
+            {124f, -20f},
+            {120f, 10f},
+            {124f, 42f}
+        };
+
+        for (int i = 0; i < shrubPositions.length; i++) {
+
+            float scale =
+                0.75f +
+                ((i % 4) * 0.10f);
+
+            ModelInstance shrubInstance =
+                new ModelInstance(
+                    shrub
+                );
+
+            shrubInstance.transform
+                .setToTranslation(
+                    shrubPositions[i][0],
+                    0.9f,
+                    shrubPositions[i][1]
+                );
+
+            shrubInstance.transform
+                .scale(
+                    scale,
+                    scale,
+                    scale
+                );
+
+            instances.add(
+                shrubInstance
+            );
+        }
     }
 
     // =========================================================
