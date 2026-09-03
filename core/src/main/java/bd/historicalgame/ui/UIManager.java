@@ -1294,6 +1294,23 @@ public class UIManager implements Disposable {
      * =========================================================
      */
 
+    /**
+     * Keeps the UI stage's viewport matched to the actual
+     * window size whenever the player resizes the game window,
+     * maximizes it, or toggles fullscreen. Without this, mouse
+     * click coordinates and layout drift out of sync with the
+     * window as soon as it stops matching the size the stage
+     * was created with.
+     */
+    public void resize(int width, int height) {
+
+        stage.getViewport().update(
+            width,
+            height,
+            true
+        );
+    }
+
     public Stage getStage() {
 
         return stage;

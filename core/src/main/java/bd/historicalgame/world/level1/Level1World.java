@@ -158,6 +158,34 @@ public class Level1World implements Disposable {
 
     private float totalTime = 0f;
 
+    // =========================================================
+    // SCREENSHOT TOAST
+    // =========================================================
+
+    /**
+     * Counts down from a small positive value whenever a
+     * screenshot has just been saved, so the HUD can show a
+     * brief "SCREENSHOT SAVED" confirmation.
+     */
+    private float screenshotToastTimer = 0f;
+
+    // =========================================================
+    // MAP (LOCATION TAGS)
+    // =========================================================
+
+    /**
+     * When true, the mini-map is shown large and centered
+     * on screen instead of the small corner radar.
+     */
+    private boolean mapExpanded = false;
+
+    /**
+     * World-space positions the player has manually tagged
+     * on the map with T. Cleared only one tag at a time
+     * (BACKSPACE), never automatically.
+     */
+    private final Array<Vector3> mapTags = new Array<>();
+
     private final Vector3[] missionTargets = {
 
         // Mission 1
@@ -2209,9 +2237,6 @@ public class Level1World implements Disposable {
         Color TRUNK_COLOR =
             Color.valueOf("5A402B");
 
-        Color BRANCH_COLOR =
-            Color.valueOf("65462D");
-
         Color LEAF_DARK =
             Color.valueOf("294B2B");
 
@@ -2244,18 +2269,6 @@ public class Level1World implements Disposable {
             );
 
         models.add(trunkModel);
-
-        Model branchModel =
-            builder.createCylinder(
-                0.24f,
-                3.0f,
-                0.24f,
-                8,
-                material(BRANCH_COLOR),
-                attributes
-            );
-
-        models.add(branchModel);
 
         Model leafLargeModel =
             builder.createSphere(
@@ -2381,7 +2394,6 @@ public class Level1World implements Disposable {
 
             createDetailedTree(
                 trunkModel,
-                branchModel,
                 leafLargeModel,
                 leafMediumModel,
                 leafSmallModel,
@@ -2457,7 +2469,6 @@ public class Level1World implements Disposable {
      */
     private void createDetailedTree(
         Model trunkModel,
-        Model branchModel,
         Model leafLargeModel,
         Model leafMediumModel,
         Model leafSmallModel,
@@ -2495,59 +2506,18 @@ public class Level1World implements Disposable {
 
         /*
          * ----------------------------------------------------
-         * LEFT BRANCH
-         * ----------------------------------------------------
-         */
-
-        ModelInstance leftBranch =
-            new ModelInstance(
-                branchModel
-            );
-
-        leftBranch.transform
-            .setToTranslation(
-                x - 1.15f * scale,
-                4.0f * scale,
-                z
-            );
-
-        leftBranch.transform.scale(
-            scale,
-            scale,
-            scale
-        );
-
-        instances.add(leftBranch);
-
-        /*
-         * ----------------------------------------------------
-         * RIGHT BRANCH
-         * ----------------------------------------------------
-         */
-
-        ModelInstance rightBranch =
-            new ModelInstance(
-                branchModel
-            );
-
-        rightBranch.transform
-            .setToTranslation(
-                x + 1.15f * scale,
-                4.15f * scale,
-                z + 0.15f
-            );
-
-        rightBranch.transform.scale(
-            scale,
-            scale,
-            scale
-        );
-
-        instances.add(rightBranch);
-
-        /*
-         * ----------------------------------------------------
          * MAIN LOWER CANOPY
+         * ----------------------------------------------------
+         *
+         * The tree previously also placed two bare "branch"
+         * cylinders here (unrotated, straight up from the
+         * trunk). Because they were taller than the gap
+         * between the trunk top and the leaf canopy, their
+         * lower half always poked out beneath the leaves,
+         * reading as a stray branch dangling out of the
+         * foliage. The canopy clusters below already read as
+         * a full tree without them, so they've been removed
+         * rather than re-angled.
          * ----------------------------------------------------
          */
 
@@ -3597,6 +3567,12 @@ public class Level1World implements Disposable {
 
         totalTime += delta;
 
+        if (screenshotToastTimer > 0f) {
+            screenshotToastTimer -= delta;
+        }
+
+        handleMapInput();
+
         if (!levelCompleted) {
 
             updateCamera(delta);
@@ -3606,6 +3582,58 @@ public class Level1World implements Disposable {
             updateObjectiveMarker();
 
             updateMission(delta);
+        }
+    }
+
+    // =========================================================
+    // SCREENSHOT
+    // =========================================================
+
+    /**
+     * Called by {@link bd.historicalgame.world.World} after a
+     * screenshot has been written to disk, so the HUD can
+     * flash a brief confirmation.
+     */
+    public void notifyScreenshotSaved() {
+        screenshotToastTimer = 2.0f;
+    }
+
+    // =========================================================
+    // MAP INPUT (TOGGLE / TAGGING)
+    // =========================================================
+
+    /**
+     * M minimizes/expands the map, T drops a tag at the
+     * player's current position, and BACKSPACE removes the
+     * most recently placed tag. Available whenever the level
+     * is active, including after completion, so the player can
+     * still review the campus map.
+     */
+    private void handleMapInput() {
+
+        if (player == null) {
+            return;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            mapExpanded = !mapExpanded;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.T)) {
+
+            mapTags.add(
+                new Vector3(
+                    player.getX(),
+                    player.getY(),
+                    player.getZ()
+                )
+            );
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.BACKSPACE)
+            && mapTags.size > 0) {
+
+            mapTags.removeIndex(mapTags.size - 1);
         }
     }
 
@@ -3758,6 +3786,30 @@ public class Level1World implements Disposable {
 
         spriteBatch.begin();
 
+        if (screenshotToastTimer > 0f) {
+
+            BitmapFont toastFont = hudFont(0.85f * scale);
+
+            toastFont.setColor(
+                1f, 1f, 1f,
+                Math.min(1f, screenshotToastTimer)
+            );
+
+            String toastText = "SCREENSHOT SAVED";
+
+            GlyphLayout toastLayout =
+                new GlyphLayout(toastFont, toastText);
+
+            toastFont.draw(
+                spriteBatch,
+                toastText,
+                w / 2f - toastLayout.width / 2f,
+                h - 24f * scale
+            );
+
+            toastFont.setColor(Color.WHITE);
+        }
+
         float titleScale = 1.45f * scale;
         float bodyScale = 0.92f * scale;
         float smallScale = 0.78f * scale;
@@ -3812,7 +3864,8 @@ public class Level1World implements Disposable {
         hintFont.setColor(Color.WHITE);
 
         String controlsHint =
-            "W A S D  MOVE     SHIFT / SPACE  JUMP     MOUSE  CAMERA     R  RESET     ESC  PAUSE";
+            "W A S D  MOVE     SHIFT / SPACE  JUMP     MOUSE  CAMERA     R  RESET     " +
+            "M  MAP     T  TAG LOCATION     F12  SCREENSHOT     ESC  PAUSE";
 
         GlyphLayout controlsLayout =
             new GlyphLayout(hintFont, controlsHint);
@@ -3905,35 +3958,76 @@ public class Level1World implements Disposable {
     }
 
     // =========================================================
-    // MINI MAP (RADAR)
+    // MINI MAP (RADAR) / EXPANDABLE MAP
     // =========================================================
 
     private static final float MINIMAP_RADIUS = 76f;
     private static final float MINIMAP_RANGE = 32f;
 
     /**
-     * Circular radar in the top-right corner. Rotates with the
-     * camera so the player's current facing direction always
-     * points to the top of the disc (same convention as the
-     * on-screen directional arrow), with a dot per mission
-     * target and a highlighted dot for the current objective.
+     * Range shown once the map is expanded (M). Wider than the
+     * corner radar so most of the campus fits on screen at once.
+     */
+    private static final float MAP_EXPANDED_RANGE = 95f;
+
+    /**
+     * Chooses between the small corner radar and the large
+     * centered map, then delegates to the shared renderer.
      */
     private void renderMiniMap() {
+
+        renderMap(mapExpanded);
+    }
+
+    /**
+     * Circular radar/map. Rotates with the camera so the
+     * player's current facing direction always points to the
+     * top of the disc (same convention as the on-screen
+     * directional arrow), with a dot per mission target, a
+     * highlighted dot for the current objective, and a marker
+     * per player-placed location tag.
+     *
+     * In its default (minimized) state this draws as a small
+     * disc tucked into the top-right corner. Pressing M expands
+     * it into a large, centered map with room for tag labels;
+     * pressing M again shrinks it back down to the corner.
+     */
+    private void renderMap(boolean expanded) {
 
         float w = Gdx.graphics.getWidth();
         float h = Gdx.graphics.getHeight();
 
         float scale = Math.max(1f, h / 1080f);
 
-        float radius = MINIMAP_RADIUS * scale;
-        float margin = 26f * scale;
+        float radius =
+            expanded
+                ? Math.min(w, h) * 0.36f
+                : MINIMAP_RADIUS * scale;
 
-        float centerX = w - margin - radius;
-        float centerY = h - margin - radius;
+        float range =
+            expanded
+                ? MAP_EXPANDED_RANGE
+                : MINIMAP_RANGE;
+
+        float centerX;
+        float centerY;
+
+        if (expanded) {
+
+            centerX = w / 2f;
+            centerY = h / 2f;
+
+        } else {
+
+            float margin = 26f * scale;
+
+            centerX = w - margin - radius;
+            centerY = h - margin - radius;
+        }
 
         /*
          * Same forward/right convention as
-         * getCameraRelativeArrow(), so the radar and the
+         * getCameraRelativeArrow(), so the map and the
          * on-screen compass arrow always agree.
          */
         float yawRad =
@@ -3952,14 +4046,24 @@ public class Level1World implements Disposable {
         hudShapes.begin(ShapeRenderer.ShapeType.Filled);
 
         /*
+         * Dim the whole screen behind the expanded map so the
+         * 3D scene doesn't compete for attention with the map.
+         */
+        if (expanded) {
+
+            hudShapes.setColor(0f, 0f, 0f, 0.55f);
+            hudShapes.rect(0f, 0f, w, h);
+        }
+
+        /*
          * Ring border: a slightly larger gold disc behind a
          * smaller dark disc, leaving a thin gold rim visible.
          */
         hudShapes.setColor(0.90f, 0.72f, 0.25f, 0.55f);
-        hudShapes.circle(centerX, centerY, radius + 3f * scale, 48);
+        hudShapes.circle(centerX, centerY, radius + 3f * scale, 64);
 
         hudShapes.setColor(0.03f, 0.045f, 0.055f, 0.90f);
-        hudShapes.circle(centerX, centerY, radius, 48);
+        hudShapes.circle(centerX, centerY, radius, 64);
 
         /*
          * Mission markers.
@@ -3985,10 +4089,10 @@ public class Level1World implements Disposable {
             } else {
 
                 float clampedDist =
-                    Math.min(worldDist, MINIMAP_RANGE);
+                    Math.min(worldDist, range);
 
                 float mapDist =
-                    (clampedDist / MINIMAP_RANGE)
+                    (clampedDist / range)
                         * (radius - 8f * scale);
 
                 float mapRight =
@@ -4024,12 +4128,73 @@ public class Level1World implements Disposable {
         }
 
         /*
-         * Player marker, fixed at the radar's center. Since the
-         * radar rotates with the camera, this always points up.
+         * Player-placed location tags. Screen positions are
+         * cached so the label pass below (a separate
+         * spriteBatch block) doesn't need to redo the
+         * world-to-map projection.
+         */
+        float[] tagScreenX = new float[mapTags.size];
+        float[] tagScreenY = new float[mapTags.size];
+
+        for (int i = 0; i < mapTags.size; i++) {
+
+            Vector3 tag = mapTags.get(i);
+
+            float dx = tag.x - player.getX();
+            float dz = tag.z - player.getZ();
+
+            float worldDist =
+                (float) Math.sqrt(dx * dx + dz * dz);
+
+            float mapX;
+            float mapY;
+
+            if (worldDist < 0.001f) {
+
+                mapX = 0f;
+                mapY = 0f;
+
+            } else {
+
+                float clampedDist =
+                    Math.min(worldDist, range);
+
+                float mapDist =
+                    (clampedDist / range)
+                        * (radius - 8f * scale);
+
+                float mapRight =
+                    (dx * rightX + dz * rightZ) / worldDist;
+
+                float mapUp =
+                    (dx * forwardX + dz * forwardZ) / worldDist;
+
+                mapX = mapRight * mapDist;
+                mapY = mapUp * mapDist;
+            }
+
+            tagScreenX[i] = centerX + mapX;
+            tagScreenY[i] = centerY + mapY;
+
+            hudShapes.setColor(0.36f, 0.85f, 0.90f, 1f);
+
+            float tagSize = (expanded ? 5.5f : 3.5f) * scale;
+
+            hudShapes.rect(
+                tagScreenX[i] - tagSize / 2f,
+                tagScreenY[i] - tagSize / 2f,
+                tagSize,
+                tagSize
+            );
+        }
+
+        /*
+         * Player marker, fixed at the map's center. Since the
+         * map rotates with the camera, this always points up.
          */
         hudShapes.setColor(0.94f, 0.96f, 0.98f, 1f);
 
-        float triSize = 7f * scale;
+        float triSize = (expanded ? 9f : 7f) * scale;
 
         hudShapes.triangle(
             centerX, centerY + triSize,
@@ -4044,7 +4209,7 @@ public class Level1World implements Disposable {
          */
         hudShapes.begin(ShapeRenderer.ShapeType.Line);
         hudShapes.setColor(0.90f, 0.72f, 0.25f, 0.9f);
-        hudShapes.circle(centerX, centerY, radius, 48);
+        hudShapes.circle(centerX, centerY, radius, 64);
         hudShapes.end();
 
         String label =
@@ -4054,7 +4219,9 @@ public class Level1World implements Disposable {
                     Math.min(missionIndex, missionTitles.length - 1)
                 ];
 
-        BitmapFont labelFont = hudFont(0.62f * scale);
+        BitmapFont labelFont =
+            hudFont((expanded ? 0.9f : 0.62f) * scale);
+
         labelFont.setColor(Color.valueOf("E8BC55"));
 
         GlyphLayout labelLayout =
@@ -4069,7 +4236,85 @@ public class Level1World implements Disposable {
             centerY - radius - 10f * scale
         );
 
+        /*
+         * Numbered labels above each tag marker. Only drawn
+         * when expanded; the minimized radar is too small for
+         * legible text next to every dot.
+         */
+        if (expanded) {
+
+            BitmapFont tagFont = hudFont(0.55f * scale);
+            tagFont.setColor(Color.valueOf("5DD9E0"));
+
+            for (int i = 0; i < mapTags.size; i++) {
+
+                String tagLabel = "TAG " + (i + 1);
+
+                GlyphLayout tagLayout =
+                    new GlyphLayout(tagFont, tagLabel);
+
+                tagFont.draw(
+                    spriteBatch,
+                    tagLabel,
+                    tagScreenX[i] - tagLayout.width / 2f,
+                    tagScreenY[i] + 14f * scale
+                );
+            }
+        }
+
+        /*
+         * Control hint: a short reminder under the corner radar,
+         * a fuller one under the expanded map.
+         */
+        BitmapFont hintFont =
+            hudFont((expanded ? 0.62f : 0.5f) * scale);
+
+        hintFont.setColor(1f, 1f, 1f, expanded ? 0.85f : 0.55f);
+
+        String hint =
+            expanded
+                ? "T  TAG LOCATION     BACKSPACE  REMOVE LAST TAG     M  MINIMIZE MAP"
+                : "M  MAP";
+
+        GlyphLayout hintLayout =
+            new GlyphLayout(hintFont, hint);
+
+        float hintY =
+            expanded
+                ? centerY - radius - 28f * scale
+                : centerY - radius - 22f * scale;
+
+        hintFont.draw(
+            spriteBatch,
+            hint,
+            centerX - hintLayout.width / 2f,
+            hintY
+        );
+
         spriteBatch.end();
+    }
+
+    // =========================================================
+    // RESIZE
+    // =========================================================
+
+    /**
+     * Keeps the 3D camera's aspect ratio matched to the actual
+     * window size whenever the player resizes the game window
+     * or toggles fullscreen. The HUD needs no equivalent call:
+     * it already reads {@code Gdx.graphics.getWidth()/getHeight()}
+     * fresh every frame.
+     */
+    public void resize(int width, int height) {
+
+        if (camera == null) {
+            return;
+        }
+
+        camera.viewportWidth = Math.max(1, width);
+        camera.viewportHeight = Math.max(1, height);
+
+        camera.update();
     }
 
     // =========================================================

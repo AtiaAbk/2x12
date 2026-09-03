@@ -27,6 +27,29 @@ public class World implements Disposable {
         return level1World;
     }
 
+    /**
+     * Keeps the active level's camera aspect ratio matched to
+     * the window whenever it is resized.
+     */
+    public void resize(int width, int height) {
+
+        if (level1World != null) {
+            level1World.resize(width, height);
+        }
+    }
+
+    /**
+     * Forwarded from {@link bd.historicalgame.Main} after a
+     * screenshot is saved so the active level can flash a
+     * brief HUD confirmation.
+     */
+    public void notifyScreenshotSaved() {
+
+        if (level1World != null) {
+            level1World.notifyScreenshotSaved();
+        }
+    }
+
     @Override
     public void dispose() {
 

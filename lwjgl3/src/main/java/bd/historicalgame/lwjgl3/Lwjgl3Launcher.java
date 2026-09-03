@@ -42,10 +42,19 @@ public class Lwjgl3Launcher {
         configuration.setTitle("2x12");
 
         /*
-         * Use the monitor's native fullscreen display mode.
-         *
-         * This makes the game occupy the entire screen.
+         * Start in native fullscreen, same as before — this is
+         * the mode that was already known to work reliably
+         * (receiving input focus immediately, etc.) on this
+         * project. It's still resizable, and the player can drop
+         * to a normal, resizable window at any time with F11
+         * (handled in Main), or resize that window freely once
+         * they're in it. Starting windowed by default caused a
+         * fresh window to sometimes not receive OS input focus on
+         * some systems, which made the whole game look frozen
+         * (no clicks, no keys) — starting fullscreen avoids that.
          */
+        configuration.setResizable(true);
+
         configuration.setFullscreenMode(
             Lwjgl3ApplicationConfiguration.getDisplayMode()
         );
