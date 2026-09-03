@@ -1360,247 +1360,426 @@ public class Level1World implements Disposable {
     // =========================================================
     // CURZON HALL
     // =========================================================
+
     private void createCurzonHall(
         ModelBuilder builder,
         long attributes
     ) {
 
-        /*
-         * =====================================================
-         * CURZON HALL - COMMIT A
-         * CORRECT OVERALL ARCHITECTURAL SCALE / MASSING
-         *
-         * 1 unit ~= 1 metre
-         *
-         * Target proportions:
-         * Overall width       ~= 88 m
-         * Main body depth     ~= 22 m
-         * Wing height         ~= 11.5 m
-         * Central tower       ~= 20.5 m
-         *
-         * This commit intentionally focuses ONLY on massing.
-         * Windows, arches, kiosks, eaves and ornament come later.
-         * =====================================================
-         */
+        // =========================================================
+        // CURZON HALL
+        // Reference-inspired wide historical facade
+        // =========================================================
 
-        final float MAIN_Z = -20.5f;
+        // ---------------------------------------------------------
+        // MAIN LONG WING
+        // ---------------------------------------------------------
 
-        /*
-         * -----------------------------------------------------
-         * 1. LONG MAIN BODY
-         *
-         * 88m wide x 22m deep x 11.5m high
-         *
-         * The large horizontal mass establishes the actual
-         * Curzon Hall scale relative to the player.
-         * -----------------------------------------------------
-         */
         addBox(
             builder,
             attributes,
-            88f,
-            11.5f,
-            22f,
+            26f,
+            5.8f,
+            7.2f,
             BRICK,
             0f,
-            5.75f,
-            MAIN_Z
+            3.0f,
+            -13f
         );
 
-        /*
-         * -----------------------------------------------------
-         * 2. SLIGHTLY PROJECTING FRONT WING BANDS
-         *
-         * These create the layered front elevation instead of
-         * leaving the building as one completely flat box.
-         * -----------------------------------------------------
-         */
-
+        // Lower stone/cream base
         addBox(
             builder,
             attributes,
-            30f,
-            10.5f,
-            2.5f,
-            BRICK_DARK,
-            -29f,
-            5.25f,
-            -9.25f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            30f,
-            10.5f,
-            2.5f,
-            BRICK_DARK,
-            29f,
-            5.25f,
-            -9.25f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 3. CENTRAL HALL BASE
-         *
-         * Wider and taller than ordinary wing bays.
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            18f,
-            13f,
-            9f,
-            BRICK,
-            0f,
-            6.5f,
-            -14.5f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 4. CENTRAL PROJECTING TOWER
-         *
-         * Approx. 15m wide x 20.5m total height.
-         *
-         * This is deliberately a large architectural mass.
-         * Decorative crown/kiosks will be added later.
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            15f,
-            20.5f,
-            8f,
-            BRICK,
-            0f,
-            10.25f,
-            -16.0f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 5. CENTRAL FRONT PROJECTION
-         *
-         * Creates the strong projecting entrance-tower feeling
-         * visible in the reference.
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            10f,
-            10f,
-            3.5f,
-            BRICK_DARK,
-            0f,
-            5f,
-            -10.25f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 6. LEFT TERMINAL MASS
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            8f,
-            13f,
-            16f,
-            BRICK_DARK,
-            -40f,
-            6.5f,
-            MAIN_Z
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 7. RIGHT TERMINAL MASS
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            8f,
-            13f,
-            16f,
-            BRICK_DARK,
-            40f,
-            6.5f,
-            MAIN_Z
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 8. CENTRAL ENTRANCE / PLINTH MASS
-         *
-         * Wide base for the future large staircase and recessed
-         * horseshoe entrance.
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            8f,
-            2.5f,
-            5f,
+            26.4f,
+            0.55f,
+            7.5f,
             CREAM,
             0f,
+            0.48f,
+            -13f
+        );
+
+        // Long upper cornice
+        addBox(
+            builder,
+            attributes,
+            26.5f,
+            0.38f,
+            7.55f,
+            CREAM,
+            0f,
+            6.0f,
+            -13f
+        );
+
+        // ---------------------------------------------------------
+        // LEFT PROJECTING WING
+        // ---------------------------------------------------------
+
+        addBox(
+            builder,
+            attributes,
+            5.2f,
+            7.0f,
+            7.8f,
+            BRICK_DARK,
+            -10.2f,
+            3.5f,
+            -13f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            5.6f,
+            0.38f,
+            8.2f,
+            CREAM,
+            -10.2f,
+            7.08f,
+            -13f
+        );
+
+        // ---------------------------------------------------------
+        // RIGHT PROJECTING WING
+        // ---------------------------------------------------------
+
+        addBox(
+            builder,
+            attributes,
+            5.2f,
+            7.0f,
+            7.8f,
+            BRICK_DARK,
+            10.2f,
+            3.5f,
+            -13f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            5.6f,
+            0.38f,
+            8.2f,
+            CREAM,
+            10.2f,
+            7.08f,
+            -13f
+        );
+
+        // ---------------------------------------------------------
+        // CENTRAL ENTRANCE MASS
+        // ---------------------------------------------------------
+
+        addBox(
+            builder,
+            attributes,
+            8.2f,
+            7.6f,
+            4.7f,
+            BRICK_DARK,
+            0f,
+            3.8f,
+            -8.8f
+        );
+
+        // Central entrance upper ledge
+        addBox(
+            builder,
+            attributes,
+            8.8f,
+            0.42f,
+            5.1f,
+            CREAM,
+            0f,
+            7.45f,
+            -8.8f
+        );
+
+        // ---------------------------------------------------------
+        // CENTRAL TALL TOWER
+        // ---------------------------------------------------------
+
+        addBox(
+            builder,
+            attributes,
+            5.6f,
+            10.8f,
+            5.0f,
+            BRICK,
+            0f,
+            5.4f,
+            -13f
+        );
+
+        // Tower lower trim
+        addBox(
+            builder,
+            attributes,
+            6.0f,
+            0.38f,
+            5.35f,
+            CREAM,
+            0f,
+            2.15f,
+            -13f
+        );
+
+        // Tower upper cornice
+        addBox(
+            builder,
+            attributes,
+            6.15f,
+            0.48f,
+            5.45f,
+            CREAM,
+            0f,
+            10.75f,
+            -13f
+        );
+
+        // ---------------------------------------------------------
+        // CENTRAL POINTED ROOF / GABLE
+        // ---------------------------------------------------------
+
+        Model centralRoof = builder.createCone(
+            4.25f,
+            4.6f,
+            4.25f,
+            4,
+            material(ROOF),
+            attributes
+        );
+
+        models.add(centralRoof);
+
+        ModelInstance centralRoofInstance =
+            new ModelInstance(centralRoof);
+
+        centralRoofInstance.transform.setToTranslation(
+            0f,
+            13.25f,
+            -13f
+        );
+
+        instances.add(centralRoofInstance);
+
+        // Small cream cap
+        addBox(
+            builder,
+            attributes,
             1.25f,
-            -7.75f
+            0.5f,
+            1.25f,
+            CREAM,
+            0f,
+            15.0f,
+            -13f
         );
 
-        /*
-         * -----------------------------------------------------
-         * 9. BROAD CENTRAL STAIRCASE BASE
-         *
-         * Kept intentionally simple in this commit.
-         * Detailed steps/railings will be a later commit.
-         * -----------------------------------------------------
-         */
+        // ---------------------------------------------------------
+        // SIDE TOWERS
+        // ---------------------------------------------------------
+
+        createTower(
+            builder,
+            attributes,
+            -10.0f,
+            -13f
+        );
+
+        createTower(
+            builder,
+            attributes,
+            10.0f,
+            -13f
+        );
+
+        // ---------------------------------------------------------
+        // SIDE TOWER DECORATIVE CAPS
+        // ---------------------------------------------------------
+
         addBox(
             builder,
             attributes,
+            4.6f,
+            0.42f,
+            4.6f,
+            CREAM,
+            -10f,
+            9.25f,
+            -13f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            4.6f,
+            0.42f,
+            4.6f,
+            CREAM,
             10f,
-            0.6f,
-            6f,
-            PATH_LIGHT,
-            0f,
-            0.3f,
-            -5.0f
+            9.25f,
+            -13f
+        );
+
+        // ---------------------------------------------------------
+        // ROOF SECTIONS OVER SIDE WINGS
+        // ---------------------------------------------------------
+
+        addBox(
+            builder,
+            attributes,
+            7.0f,
+            0.5f,
+            8.0f,
+            ROOF,
+            -6.8f,
+            6.65f,
+            -13f
         );
 
         addBox(
             builder,
             attributes,
-            8.5f,
-            0.6f,
-            5f,
-            PATH_LIGHT,
+            7.0f,
+            0.5f,
+            8.0f,
+            ROOF,
+            6.8f,
+            6.65f,
+            -13f
+        );
+
+        // ---------------------------------------------------------
+        // FRONT ENTRANCE COLUMNS
+        // ---------------------------------------------------------
+
+        createCurzonColumn(
+            builder,
+            attributes,
+            -3.0f,
+            3.7f,
+            -6.35f
+        );
+
+        createCurzonColumn(
+            builder,
+            attributes,
+             3.0f,
+            3.7f,
+            -6.35f
+        );
+
+        // ---------------------------------------------------------
+        // ENTRANCE TOP
+        // ---------------------------------------------------------
+
+        addBox(
+            builder,
+            attributes,
+            7.0f,
+            0.4f,
+            0.65f,
+            CREAM,
             0f,
-            0.9f,
-            -7.0f
+            7.15f,
+            -6.35f
         );
 
         addBox(
             builder,
             attributes,
-            7f,
+            6.2f,
+            0.42f,
             0.6f,
-            4f,
-            PATH_LIGHT,
+            BRICK_DARK,
             0f,
-            1.5f,
-            -8.5f
+            7.48f,
+            -6.35f
         );
 
-        System.out.println(
-            "CURZON HALL: Correct architectural scale/massing created."
+        // ---------------------------------------------------------
+        // LARGE CENTRAL ENTRANCE
+        // ---------------------------------------------------------
+
+        addBox(
+            builder,
+            attributes,
+            3.1f,
+            4.0f,
+            0.22f,
+            Color.valueOf("30251F"),
+            0f,
+            2.35f,
+            -6.42f
+        );
+
+        // Door divisions
+        addBox(
+            builder,
+            attributes,
+            0.14f,
+            3.55f,
+            0.12f,
+            CREAM,
+            -1.42f,
+            2.35f,
+            -6.55f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.14f,
+            3.55f,
+            0.12f,
+            CREAM,
+            1.42f,
+            2.35f,
+            -6.55f
+        );
+
+        // ---------------------------------------------------------
+        // WIDE FRONT STAIRS
+        // ---------------------------------------------------------
+
+        addBox(
+            builder,
+            attributes,
+            11f,
+            0.28f,
+            3.5f,
+            PATH_LIGHT,
+            0f,
+            0.18f,
+            -7.55f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            9.2f,
+            0.22f,
+            2.8f,
+            CREAM,
+            0f,
+            0.40f,
+            -7.10f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            7.4f,
+            0.18f,
+            2.1f,
+            PATH_LIGHT,
+            0f,
+            0.58f,
+            -6.75f
         );
     }
 
