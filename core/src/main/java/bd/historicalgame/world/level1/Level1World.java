@@ -1736,140 +1736,599 @@ public class Level1World implements Disposable {
     // TREES
     // =========================================================
 
+    /**
+     * Level 1 foliage system.
+     *
+     * Important design goals:
+     *
+     * 1. Natural campus tree distribution.
+     * 2. Larger canopy than the original prototype.
+     * 3. Shared models instead of creating new models for every
+     *    individual tree.
+     * 4. Multiple tree sizes to avoid clone-like repetition.
+     * 5. Palm trees for visual variation.
+     *
+     * The main walkway is intentionally framed by trees so the
+     * player gets the same tree-lined campus feeling as the
+     * visual reference.
+     */
     private void createTrees(
         ModelBuilder builder,
         long attributes
     ) {
 
+        /*
+         * ----------------------------------------------------
+         * SHARED MATERIALS
+         * ----------------------------------------------------
+         */
+
+        Color TRUNK_COLOR =
+            Color.valueOf("5A402B");
+
+        Color BRANCH_COLOR =
+            Color.valueOf("65462D");
+
+        Color LEAF_DARK =
+            Color.valueOf("294B2B");
+
+        Color LEAF_MID =
+            Color.valueOf("37633A");
+
+        Color LEAF_LIGHT =
+            Color.valueOf("4B7842");
+
+        Color PALM_TRUNK =
+            Color.valueOf("6B4A2E");
+
+        Color PALM_LEAF =
+            Color.valueOf("3E6E39");
+
+        /*
+         * ----------------------------------------------------
+         * SHARED MODELS
+         * ----------------------------------------------------
+         */
+
+        Model trunkModel =
+            builder.createCylinder(
+                0.62f,
+                4.4f,
+                0.62f,
+                12,
+                material(TRUNK_COLOR),
+                attributes
+            );
+
+        models.add(trunkModel);
+
+        Model branchModel =
+            builder.createCylinder(
+                0.24f,
+                3.0f,
+                0.24f,
+                8,
+                material(BRANCH_COLOR),
+                attributes
+            );
+
+        models.add(branchModel);
+
+        Model leafLargeModel =
+            builder.createSphere(
+                4.8f,
+                4.1f,
+                4.8f,
+                14,
+                12,
+                material(LEAF_DARK),
+                attributes
+            );
+
+        models.add(leafLargeModel);
+
+        Model leafMediumModel =
+            builder.createSphere(
+                3.8f,
+                3.5f,
+                3.8f,
+                14,
+                12,
+                material(LEAF_MID),
+                attributes
+            );
+
+        models.add(leafMediumModel);
+
+        Model leafSmallModel =
+            builder.createSphere(
+                2.8f,
+                2.7f,
+                2.8f,
+                12,
+                10,
+                material(LEAF_LIGHT),
+                attributes
+            );
+
+        models.add(leafSmallModel);
+
+        /*
+         * ----------------------------------------------------
+         * MAIN CAMPUS TREE POSITIONS
+         * ----------------------------------------------------
+         *
+         * These trees intentionally frame paths and open lawn
+         * areas instead of randomly filling the playable space.
+         */
+
         float[][] positions = {
 
-            {-27f, 14f},
-            {-21f, 7f},
-            {-27f, 1f},
-            {-25f, -7f},
-            {-28f, -17f},
+            // Main avenue - west side
+            {-11f, 18f},
+            {-11.5f, 12f},
+            {-11f, 6f},
+            {-11.5f, 0f},
+            {-11f, -6f},
+            {-11.5f, -12f},
+            {-11f, -18f},
 
-            {-12f, 12f},
-            {-12f, 7f},
-            {-12f, 1f},
-            {-12f, -5f},
+            // Main avenue - east side
+            {11f, 18f},
+            {11.5f, 12f},
+            {11f, 6f},
+            {11.5f, 0f},
+            {11f, -6f},
+            {11.5f, -12f},
+            {11f, -18f},
 
-            {12f, 12f},
-            {12f, 7f},
-            {12f, 1f},
-            {12f, -5f},
+            // Central lawn background
+            {-21f, 17f},
+            {-15f, 19f},
+            {-7f, 18f},
+            {7f, 18f},
+            {15f, 19f},
+            {21f, 17f},
 
-            {27f, 14f},
-            {22f, 8f},
-            {27f, 1f},
-            {25f, -7f},
-            {28f, -17f},
+            // Central lawn sides
+            {-23f, 11f},
+            {-24f, 4f},
+            {-23f, -4f},
+            {-24f, -11f},
 
-            {-7f, 17f},
-            {7f, 17f}
+            {23f, 11f},
+            {24f, 4f},
+            {23f, -4f},
+            {24f, -11f},
+
+            // Outer campus transition
+            {-31f, 20f},
+            {-34f, 13f},
+            {-32f, 5f},
+            {-34f, -5f},
+            {-31f, -14f},
+
+            {31f, 20f},
+            {34f, 13f},
+            {32f, 5f},
+            {34f, -5f},
+            {31f, -14f},
+
+            // Curzon approach framing
+            {-16f, -18f},
+            {16f, -18f},
+            {-20f, -22f},
+            {20f, -22f}
         };
 
-        for (float[] p : positions) {
+        /*
+         * Create trees with deterministic visual variation.
+         */
+        for (int i = 0; i < positions.length; i++) {
 
-            createTree(
-                builder,
-                attributes,
-                p[0],
-                p[1]
+            float scale =
+                0.82f +
+                ((i % 5) * 0.09f);
+
+            float x =
+                positions[i][0];
+
+            float z =
+                positions[i][1];
+
+            createDetailedTree(
+                trunkModel,
+                branchModel,
+                leafLargeModel,
+                leafMediumModel,
+                leafSmallModel,
+                x,
+                z,
+                scale,
+                i
+            );
+        }
+
+        /*
+         * ----------------------------------------------------
+         * PALM TREES
+         * ----------------------------------------------------
+         *
+         * A few palms break the visual repetition and give the
+         * campus environment more Dhaka-specific character.
+         */
+
+        Model palmTrunkModel =
+            builder.createCylinder(
+                0.42f,
+                5.8f,
+                0.55f,
+                10,
+                material(PALM_TRUNK),
+                attributes
+            );
+
+        models.add(palmTrunkModel);
+
+        Model palmLeafModel =
+            builder.createSphere(
+                4.2f,
+                1.2f,
+                4.2f,
+                12,
+                6,
+                material(PALM_LEAF),
+                attributes
+            );
+
+        models.add(palmLeafModel);
+
+        float[][] palms = {
+
+            {-28f, 15f},
+            {28f, 15f},
+            {-29f, -9f},
+            {29f, -9f},
+            {-20f, 24f},
+            {20f, 24f}
+        };
+
+        for (int i = 0; i < palms.length; i++) {
+
+            createPalmTree(
+                palmTrunkModel,
+                palmLeafModel,
+                palms[i][0],
+                palms[i][1],
+                0.90f + ((i % 3) * 0.08f)
             );
         }
     }
 
-    private void createTree(
-        ModelBuilder builder,
-        long attributes,
+    /**
+     * Creates one tree using shared models.
+     *
+     * The foliage is intentionally composed of multiple clusters
+     * rather than one perfect sphere. This produces a more organic
+     * silhouette while keeping the geometry inexpensive.
+     */
+    private void createDetailedTree(
+        Model trunkModel,
+        Model branchModel,
+        Model leafLargeModel,
+        Model leafMediumModel,
+        Model leafSmallModel,
         float x,
-        float z
+        float z,
+        float scale,
+        int variation
     ) {
 
         /*
-         * Trunk.
+         * ----------------------------------------------------
+         * TRUNK
+         * ----------------------------------------------------
          */
-        Model trunk =
-            builder.createCylinder(
-                0.55f,
-                3.2f,
-                0.55f,
-                12,
-                material(WOOD),
-                attributes
+
+        ModelInstance trunk =
+            new ModelInstance(
+                trunkModel
             );
 
-        models.add(trunk);
+        trunk.transform
+            .setToTranslation(
+                x,
+                2.2f * scale,
+                z
+            );
 
-        ModelInstance trunkInstance =
-            new ModelInstance(trunk);
-
-        trunkInstance.transform.setToTranslation(
-            x,
-            1.6f,
-            z
+        trunk.transform.scale(
+            scale,
+            scale,
+            scale
         );
 
-        instances.add(trunkInstance);
+        instances.add(trunk);
 
         /*
-         * Lower foliage.
+         * ----------------------------------------------------
+         * LEFT BRANCH
+         * ----------------------------------------------------
          */
-        Model leaves =
-            builder.createSphere(
-                4.2f,
-                4.2f,
-                4.2f,
-                16,
-                16,
-                material(
-                    Color.valueOf("365B35")
-                ),
-                attributes
+
+        ModelInstance leftBranch =
+            new ModelInstance(
+                branchModel
             );
 
-        models.add(leaves);
+        leftBranch.transform
+            .setToTranslation(
+                x - 1.15f * scale,
+                4.0f * scale,
+                z
+            );
 
-        ModelInstance leavesInstance =
-            new ModelInstance(leaves);
-
-        leavesInstance.transform.setToTranslation(
-            x,
-            4.8f,
-            z
+        leftBranch.transform.scale(
+            scale,
+            scale,
+            scale
         );
 
-        instances.add(leavesInstance);
+        instances.add(leftBranch);
 
         /*
-         * Upper foliage.
+         * ----------------------------------------------------
+         * RIGHT BRANCH
+         * ----------------------------------------------------
          */
-        Model crown =
-            builder.createSphere(
-                3.2f,
-                3.2f,
-                3.2f,
-                16,
-                16,
-                material(
-                    Color.valueOf("426B3C")
-                ),
-                attributes
+
+        ModelInstance rightBranch =
+            new ModelInstance(
+                branchModel
             );
 
-        models.add(crown);
+        rightBranch.transform
+            .setToTranslation(
+                x + 1.15f * scale,
+                4.15f * scale,
+                z + 0.15f
+            );
 
-        ModelInstance crownInstance =
-            new ModelInstance(crown);
-
-        crownInstance.transform.setToTranslation(
-            x + 0.5f,
-            7.2f,
-            z
+        rightBranch.transform.scale(
+            scale,
+            scale,
+            scale
         );
 
-        instances.add(crownInstance);
+        instances.add(rightBranch);
+
+        /*
+         * ----------------------------------------------------
+         * MAIN LOWER CANOPY
+         * ----------------------------------------------------
+         */
+
+        ModelInstance lower =
+            new ModelInstance(
+                leafLargeModel
+            );
+
+        lower.transform
+            .setToTranslation(
+                x,
+                5.5f * scale,
+                z
+            );
+
+        lower.transform.scale(
+            scale,
+            scale * 0.90f,
+            scale
+        );
+
+        instances.add(lower);
+
+        /*
+         * ----------------------------------------------------
+         * LEFT CANOPY
+         * ----------------------------------------------------
+         */
+
+        ModelInstance left =
+            new ModelInstance(
+                leafMediumModel
+            );
+
+        left.transform
+            .setToTranslation(
+                x - 2.7f * scale,
+                6.1f * scale,
+                z + 0.25f
+            );
+
+        left.transform.scale(
+            scale * 0.82f,
+            scale * 0.85f,
+            scale * 0.82f
+        );
+
+        instances.add(left);
+
+        /*
+         * ----------------------------------------------------
+         * RIGHT CANOPY
+         * ----------------------------------------------------
+         */
+
+        ModelInstance right =
+            new ModelInstance(
+                leafMediumModel
+            );
+
+        right.transform
+            .setToTranslation(
+                x + 2.7f * scale,
+                6.0f * scale,
+                z - 0.20f
+            );
+
+        right.transform.scale(
+            scale * 0.82f,
+            scale * 0.86f,
+            scale * 0.82f
+        );
+
+        instances.add(right);
+
+        /*
+         * ----------------------------------------------------
+         * TOP CANOPY
+         * ----------------------------------------------------
+         */
+
+        ModelInstance top =
+            new ModelInstance(
+                leafSmallModel
+            );
+
+        top.transform
+            .setToTranslation(
+                x + ((variation % 3) - 1) * 0.7f,
+                8.0f * scale,
+                z
+            );
+
+        top.transform.scale(
+            scale * 0.90f,
+            scale * 0.90f,
+            scale * 0.90f
+        );
+
+        instances.add(top);
+
+        /*
+         * Extra small foliage cluster on alternating trees.
+         */
+        if (variation % 2 == 0) {
+
+            ModelInstance accent =
+                new ModelInstance(
+                    leafSmallModel
+                );
+
+            accent.transform
+                .setToTranslation(
+                    x - 1.5f * scale,
+                    7.3f * scale,
+                    z + 1.5f * scale
+                );
+
+            accent.transform.scale(
+                scale * 0.65f,
+                scale * 0.70f,
+                scale * 0.65f
+            );
+
+            instances.add(accent);
+        }
+    }
+
+    /**
+     * Creates a simplified palm silhouette.
+     */
+    private void createPalmTree(
+        Model palmTrunkModel,
+        Model palmLeafModel,
+        float x,
+        float z,
+        float scale
+    ) {
+
+        ModelInstance trunk =
+            new ModelInstance(
+                palmTrunkModel
+            );
+
+        trunk.transform
+            .setToTranslation(
+                x,
+                2.9f * scale,
+                z
+            );
+
+        trunk.transform.scale(
+            scale,
+            scale,
+            scale
+        );
+
+        instances.add(trunk);
+
+        /*
+         * Central palm crown.
+         */
+        ModelInstance crown =
+            new ModelInstance(
+                palmLeafModel
+            );
+
+        crown.transform
+            .setToTranslation(
+                x,
+                6.0f * scale,
+                z
+            );
+
+        crown.transform.scale(
+            scale,
+            scale,
+            scale
+        );
+
+        instances.add(crown);
+
+        /*
+         * Side foliage clusters.
+         */
+        ModelInstance left =
+            new ModelInstance(
+                palmLeafModel
+            );
+
+        left.transform
+            .setToTranslation(
+                x - 1.9f * scale,
+                6.1f * scale,
+                z
+            );
+
+        left.transform.scale(
+            scale * 0.65f,
+            scale * 0.70f,
+            scale * 0.65f
+        );
+
+        instances.add(left);
+
+        ModelInstance right =
+            new ModelInstance(
+                palmLeafModel
+            );
+
+        right.transform
+            .setToTranslation(
+                x + 1.9f * scale,
+                6.0f * scale,
+                z
+            );
+
+        right.transform.scale(
+            scale * 0.65f,
+            scale * 0.70f,
+            scale * 0.65f
+        );
+
+        instances.add(right);
     }
 
     // =========================================================
