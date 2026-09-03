@@ -1951,6 +1951,235 @@ public class Level1World implements Disposable {
         System.out.println(
             "CURZON HALL: Main recessed entrance and arch added."
         );
+
+        
+        // COMMIT_D_WING_ARCADES
+        /*
+         * =====================================================
+         * CURZON HALL — SYMMETRICAL WING ARCADES
+         *
+         * Long repeated arcade modules on both sides of the
+         * central tower.
+         *
+         * Left/right sides are generated from the same geometry
+         * so the main facade remains symmetrical.
+         *
+         * This commit focuses on:
+         *   - repeated piers
+         *   - dark recessed openings
+         *   - curved masonry arch blocks
+         *
+         * Kiosks / roof / decorative details come later.
+         * =====================================================
+         */
+
+        final Color WING_RECESS =
+            Color.valueOf("34231E");
+
+        final Color WING_ARCH =
+            Color.valueOf("B88965");
+
+        /*
+         * Each side contains 8 visible bays.
+         *
+         * Bay centers are kept away from the central tower.
+         */
+        float[] wingBayX = {
+            10.0f, 13.4f, 16.8f, 20.2f,
+            23.6f, 27.0f, 30.4f, 33.8f
+        };
+
+        for (int side = -1; side <= 1; side += 2) {
+
+            for (float baseX : wingBayX) {
+
+                float wingX = baseX * side;
+
+                /*
+                 * -------------------------------------------------
+                 * DARK RECESSED BAY
+                 * -------------------------------------------------
+                 */
+                addBox(
+                    builder,
+                    attributes,
+                    2.65f,
+                    7.8f,
+                    0.30f,
+                    WING_RECESS,
+                    wingX,
+                    4.65f,
+                    -20.30f
+                );
+
+                /*
+                 * -------------------------------------------------
+                 * LEFT / RIGHT VERTICAL PIERS OF BAY
+                 * -------------------------------------------------
+                 */
+                float pierOffset = 1.55f;
+
+                addBox(
+                    builder,
+                    attributes,
+                    0.62f,
+                    9.6f,
+                    1.15f,
+                    BRICK_DARK,
+                    wingX - pierOffset,
+                    4.8f,
+                    -20.48f
+                );
+
+                addBox(
+                    builder,
+                    attributes,
+                    0.62f,
+                    9.6f,
+                    1.15f,
+                    BRICK_DARK,
+                    wingX + pierOffset,
+                    4.8f,
+                    -20.48f
+                );
+
+                /*
+                 * -------------------------------------------------
+                 * ARCH BLOCKS
+                 *
+                 * Individual blocks follow a semicircular curve
+                 * in the X/Y plane.
+                 * -------------------------------------------------
+                 */
+                float wingArchRadius = 1.48f;
+                float wingArchCenterY = 7.05f;
+
+                float[] wingAngles = {
+                    15f, 30f, 45f, 60f,
+                    75f, 90f, 105f, 120f,
+                    135f, 150f, 165f
+                };
+
+                for (float wingAngle : wingAngles) {
+
+                    float wingRadians =
+                        wingAngle * MathUtils.degreesToRadians;
+
+                    float localX =
+                        wingArchRadius *
+                        MathUtils.cos(wingRadians);
+
+                    float localY =
+                        wingArchRadius *
+                        MathUtils.sin(wingRadians);
+
+                    /*
+                     * Mirror the arch geometry together with
+                     * the wing.
+                     */
+                    float finalX =
+                        wingX + (localX * side);
+
+                    float finalY =
+                        wingArchCenterY + localY;
+
+                    Model wingArchBlock =
+                        builder.createBox(
+                            0.52f,
+                            0.34f,
+                            0.42f,
+                            material(WING_ARCH),
+                            attributes
+                        );
+
+                    models.add(wingArchBlock);
+
+                    ModelInstance wingArchInstance =
+                        new ModelInstance(wingArchBlock);
+
+                    wingArchInstance.transform.setToTranslation(
+                        finalX,
+                        finalY,
+                        -20.55f
+                    );
+
+                    /*
+                     * Tangential orientation.
+                     */
+                    float rotation =
+                        wingAngle - 90f;
+
+                    if (side < 0) {
+                        rotation = -rotation;
+                    }
+
+                    wingArchInstance.transform.rotate(
+                        Vector3.Z,
+                        rotation
+                    );
+
+                    instances.add(wingArchInstance);
+                }
+
+                /*
+                 * -------------------------------------------------
+                 * SMALL ARCH BASE / SPRING BANDS
+                 * -------------------------------------------------
+                 */
+                addBox(
+                    builder,
+                    attributes,
+                    3.4f,
+                    0.32f,
+                    0.45f,
+                    WING_ARCH,
+                    wingX,
+                    5.95f,
+                    -20.55f
+                );
+            }
+        }
+
+        /*
+         * ---------------------------------------------------------
+         * UPPER LEVEL VISUAL BAND
+         *
+         * A continuous horizontal architectural line makes the
+         * wings read as two-storey historical masonry instead of
+         * one giant box.
+         * ---------------------------------------------------------
+         */
+
+        addBox(
+            builder,
+            attributes,
+            64f,
+            0.42f,
+            0.55f,
+            WING_ARCH,
+            0f,
+            9.85f,
+            -20.60f
+        );
+
+        /*
+         * Central interruption restores the tower hierarchy.
+         */
+        addBox(
+            builder,
+            attributes,
+            14f,
+            0.55f,
+            0.65f,
+            BRICK_DARK,
+            0f,
+            10.0f,
+            -20.62f
+        );
+
+        System.out.println(
+            "CURZON HALL: Symmetrical wing arcades added."
+        );
 }
 
     // =========================================================
