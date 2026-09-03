@@ -6,73 +6,22 @@ import bd.historicalgame.player.Player;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.PerspectiveCamera;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.VertexAttributes;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g3d.Attribute;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g3d.Environment;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g3d.Material;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g3d.Model;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g3d.ModelBatch;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g3d.ModelInstance;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.PixmapIO;
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
@@ -107,9 +56,6 @@ import com.badlogic.gdx.utils.Disposable;
  * can run without external 3D assets.
  */
 public class Level1World implements Disposable {
-
-    private boolean SCREENSHOT_TRIGGERED_FOR_LEVEL1 = false;
-
 
     // =========================================================
     // RENDERING
@@ -211,34 +157,6 @@ public class Level1World implements Disposable {
     private float missionTimer = 0f;
 
     private float totalTime = 0f;
-
-    // =========================================================
-    // SCREENSHOT TOAST
-    // =========================================================
-
-    /**
-     * Counts down from a small positive value whenever a
-     * screenshot has just been saved, so the HUD can show a
-     * brief "SCREENSHOT SAVED" confirmation.
-     */
-    private float screenshotToastTimer = 0f;
-
-    // =========================================================
-    // MAP (LOCATION TAGS)
-    // =========================================================
-
-    /**
-     * When true, the mini-map is shown large and centered
-     * on screen instead of the small corner radar.
-     */
-    private boolean mapExpanded = false;
-
-    /**
-     * World-space positions the player has manually tagged
-     * on the map with T. Cleared only one tag at a time
-     * (BACKSPACE), never automatically.
-     */
-    private final Array<Vector3> mapTags = new Array<>();
 
     private final Vector3[] missionTargets = {
 
@@ -1360,978 +1278,136 @@ public class Level1World implements Disposable {
     // =========================================================
     // CURZON HALL
     // =========================================================
+
     private void createCurzonHall(
         ModelBuilder builder,
         long attributes
     ) {
 
         /*
-         * =====================================================
-         * CURZON HALL - COMMIT A
-         * CORRECT OVERALL ARCHITECTURAL SCALE / MASSING
-         *
-         * 1 unit ~= 1 metre
-         *
-         * Target proportions:
-         * Overall width       ~= 88 m
-         * Main body depth     ~= 22 m
-         * Wing height         ~= 11.5 m
-         * Central tower       ~= 20.5 m
-         *
-         * This commit intentionally focuses ONLY on massing.
-         * Windows, arches, kiosks, eaves and ornament come later.
-         * =====================================================
-         */
-
-        final float MAIN_Z = -20.5f;
-
-        /*
-         * -----------------------------------------------------
-         * 1. LONG MAIN BODY
-         *
-         * 88m wide x 22m deep x 11.5m high
-         *
-         * The large horizontal mass establishes the actual
-         * Curzon Hall scale relative to the player.
-         * -----------------------------------------------------
+         * Main red-brick body.
          */
         addBox(
             builder,
             attributes,
-            88f,
-            11.5f,
             22f,
-            BRICK,
-            0f,
-            5.75f,
-            MAIN_Z
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 2. SLIGHTLY PROJECTING FRONT WING BANDS
-         *
-         * These create the layered front elevation instead of
-         * leaving the building as one completely flat box.
-         * -----------------------------------------------------
-         */
-
-        addBox(
-            builder,
-            attributes,
-            30f,
-            10.5f,
-            2.5f,
-            BRICK_DARK,
-            -29f,
-            5.25f,
-            -9.25f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            30f,
-            10.5f,
-            2.5f,
-            BRICK_DARK,
-            29f,
-            5.25f,
-            -9.25f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 3. CENTRAL HALL BASE
-         *
-         * Wider and taller than ordinary wing bays.
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            18f,
-            13f,
-            9f,
-            BRICK,
-            0f,
-            6.5f,
-            -14.5f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 4. CENTRAL PROJECTING TOWER
-         *
-         * Approx. 15m wide x 20.5m total height.
-         *
-         * This is deliberately a large architectural mass.
-         * Decorative crown/kiosks will be added later.
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            15f,
-            20.5f,
-            8f,
-            BRICK,
-            0f,
-            10.25f,
-            -16.0f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 5. CENTRAL FRONT PROJECTION
-         *
-         * Creates the strong projecting entrance-tower feeling
-         * visible in the reference.
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            10f,
-            10f,
-            3.5f,
-            BRICK_DARK,
-            0f,
-            5f,
-            -10.25f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 6. LEFT TERMINAL MASS
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            8f,
-            13f,
-            16f,
-            BRICK_DARK,
-            -40f,
-            6.5f,
-            MAIN_Z
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 7. RIGHT TERMINAL MASS
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            8f,
-            13f,
-            16f,
-            BRICK_DARK,
-            40f,
-            6.5f,
-            MAIN_Z
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 8. CENTRAL ENTRANCE / PLINTH MASS
-         *
-         * Wide base for the future large staircase and recessed
-         * horseshoe entrance.
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            8f,
-            2.5f,
-            5f,
-            CREAM,
-            0f,
-            1.25f,
-            -7.75f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 9. BROAD CENTRAL STAIRCASE BASE
-         *
-         * Kept intentionally simple in this commit.
-         * Detailed steps/railings will be a later commit.
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            10f,
-            0.6f,
             6f,
-            PATH_LIGHT,
+            7f,
+            BRICK,
             0f,
-            0.3f,
-            -5.0f
+            3f,
+            -13f
         );
 
-        addBox(
-            builder,
-            attributes,
-            8.5f,
-            0.6f,
-            5f,
-            PATH_LIGHT,
-            0f,
-            0.9f,
-            -7.0f
-        );
-
+        /*
+         * Central entrance.
+         */
         addBox(
             builder,
             attributes,
             7f,
-            0.6f,
+            7.5f,
             4f,
-            PATH_LIGHT,
-            0f,
-            1.5f,
-            -8.5f
-        );
-
-        System.out.println(
-            "CURZON HALL: Correct architectural scale/massing created."
-        );
-    
-        
-        // COMMIT_B_CENTRAL_THREE_WINDOWS
-        /*
-         * -----------------------------------------------------
-         * CENTRAL TOWER — THREE TALL UPPER WINDOWS
-         *
-         * Reference target:
-         *   - three vertically elongated openings
-         *   - center opening slightly dominant
-         *   - dark recessed interior
-         *   - aged cream masonry framing
-         *
-         * This commit intentionally does not add the final
-         * horseshoe/cusped arch geometry yet.
-         * -----------------------------------------------------
-         */
-
-        // Left window recess
-        addBox(
-            builder,
-            attributes,
-            2.4f,
-            5.2f,
-            0.18f,
-            Color.valueOf("30221E"),
-            -3.8f,
-            13.6f,
-            -20.08f
-        );
-
-        // Center window recess
-        addBox(
-            builder,
-            attributes,
-            2.8f,
-            5.8f,
-            0.18f,
-            Color.valueOf("241916"),
-            0f,
-            13.8f,
-            -20.08f
-        );
-
-        // Right window recess
-        addBox(
-            builder,
-            attributes,
-            2.4f,
-            5.2f,
-            0.18f,
-            Color.valueOf("30221E"),
-            3.8f,
-            13.6f,
-            -20.08f
-        );
-
-        // Cream vertical surrounds
-        addBox(
-            builder,
-            attributes,
-            0.32f,
-            5.8f,
-            0.24f,
-            CREAM,
-            -5.15f,
-            13.6f,
-            -20.18f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            0.32f,
-            5.8f,
-            0.24f,
-            CREAM,
-            -2.45f,
-            13.6f,
-            -20.18f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            0.34f,
-            6.2f,
-            0.24f,
-            CREAM,
-            -1.55f,
-            13.8f,
-            -20.18f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            0.34f,
-            6.2f,
-            0.24f,
-            CREAM,
-            1.55f,
-            13.8f,
-            -20.18f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            0.32f,
-            5.8f,
-            0.24f,
-            CREAM,
-            2.45f,
-            13.6f,
-            -20.18f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            0.32f,
-            5.8f,
-            0.24f,
-            CREAM,
-            5.15f,
-            13.6f,
-            -20.18f
-        );
-
-        // Lower sill band
-        addBox(
-            builder,
-            attributes,
-            11.0f,
-            0.35f,
-            0.25f,
-            CREAM,
-            0f,
-            10.75f,
-            -20.18f
-        );
-
-        // Upper horizontal frame
-        addBox(
-            builder,
-            attributes,
-            11.0f,
-            0.35f,
-            0.25f,
-            CREAM,
-            0f,
-            16.8f,
-            -20.18f
-        );
-
-        System.out.println(
-            "CURZON HALL: Central three upper windows added."
-        );
-
-        
-        // COMMIT_C_MAIN_ENTRANCE
-        /*
-         * =====================================================
-         * CENTRAL MAIN ENTRANCE
-         *
-         * Target:
-         *   Width  ~= 4.2m
-         *   Height ~= 7.0m
-         *
-         * Visual structure:
-         *   - deep dark recess
-         *   - heavy vertical masonry frame
-         *   - curved horseshoe-style arch
-         *   - raised threshold
-         * =====================================================
-         */
-
-        final Color ENTRANCE_DARK =
-            Color.valueOf("211714");
-
-        final Color ARCH_CREAM =
-            Color.valueOf("C9B28A");
-
-        /*
-         * -----------------------------------------------------
-         * 1. DEEP DARK ENTRANCE CAVITY
-         *
-         * Slightly in front of the tower facade so it reads as
-         * a real recessed opening rather than a flat texture.
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            4.4f,
-            6.8f,
-            0.35f,
-            ENTRANCE_DARK,
-            0f,
-            3.65f,
-            -20.28f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 2. HEAVY SIDE PIERS
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            0.65f,
-            7.2f,
-            0.45f,
-            ARCH_CREAM,
-            -2.55f,
-            3.6f,
-            -20.48f
-        );
-
-        addBox(
-            builder,
-            attributes,
-            0.65f,
-            7.2f,
-            0.45f,
-            ARCH_CREAM,
-            2.55f,
-            3.6f,
-            -20.48f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 3. ARCH SPRING BAND
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            5.6f,
-            0.38f,
-            0.48f,
-            ARCH_CREAM,
-            0f,
-            6.95f,
-            -20.50f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 4. CURVED ARCH VOUSSOIRS
-         *
-         * Individual masonry blocks are placed along a
-         * semicircular path. Each block is rotated so the
-         * entrance reads as a real curved masonry arch.
-         * -----------------------------------------------------
-         */
-
-        float archCenterY = 6.95f;
-        float radius = 2.15f;
-
-        float[] angles = {
-            20f, 40f, 60f, 80f,
-            100f, 120f, 140f, 160f
-        };
-
-        for (float angle : angles) {
-
-            float radians =
-                angle * com.badlogic.gdx.math.MathUtils.degreesToRadians;
-
-            float x =
-                radius * com.badlogic.gdx.math.MathUtils.cos(radians);
-
-            float y =
-                archCenterY +
-                radius * com.badlogic.gdx.math.MathUtils.sin(radians);
-
-            Model archBlock =
-                builder.createBox(
-                    0.72f,
-                    0.42f,
-                    0.48f,
-                    material(ARCH_CREAM),
-                    attributes
-                );
-
-            models.add(archBlock);
-
-            ModelInstance archInstance =
-                new ModelInstance(archBlock);
-
-            archInstance.transform.setToTranslation(
-                x,
-                y,
-                -20.52f
-            );
-
-            /*
-             * Tangential rotation makes the individual blocks
-             * follow the curved arch.
-             */
-            archInstance.transform.rotate(
-                Vector3.Z,
-                angle - 90f
-            );
-
-            instances.add(archInstance);
-        }
-
-        /*
-         * -----------------------------------------------------
-         * 5. CENTRAL KEYSTONE
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            0.85f,
-            0.65f,
-            0.55f,
-            ARCH_CREAM,
-            0f,
-            9.12f,
-            -20.54f
-        );
-
-        /*
-         * -----------------------------------------------------
-         * 6. ENTRANCE THRESHOLD
-         * -----------------------------------------------------
-         */
-        addBox(
-            builder,
-            attributes,
-            5.8f,
-            0.30f,
-            1.0f,
-            ARCH_CREAM,
-            0f,
-            0.18f,
-            -19.95f
-        );
-
-        System.out.println(
-            "CURZON HALL: Main recessed entrance and arch added."
-        );
-
-        
-        // COMMIT_D_WING_ARCADES
-        /*
-         * =====================================================
-         * CURZON HALL — SYMMETRICAL WING ARCADES
-         *
-         * Long repeated arcade modules on both sides of the
-         * central tower.
-         *
-         * Left/right sides are generated from the same geometry
-         * so the main facade remains symmetrical.
-         *
-         * This commit focuses on:
-         *   - repeated piers
-         *   - dark recessed openings
-         *   - curved masonry arch blocks
-         *
-         * Kiosks / roof / decorative details come later.
-         * =====================================================
-         */
-
-        final Color WING_RECESS =
-            Color.valueOf("34231E");
-
-        final Color WING_ARCH =
-            Color.valueOf("B88965");
-
-        /*
-         * Each side contains 8 visible bays.
-         *
-         * Bay centers are kept away from the central tower.
-         */
-        float[] wingBayX = {
-            10.0f, 13.4f, 16.8f, 20.2f,
-            23.6f, 27.0f, 30.4f, 33.8f
-        };
-
-        for (int side = -1; side <= 1; side += 2) {
-
-            for (float baseX : wingBayX) {
-
-                float wingX = baseX * side;
-
-                /*
-                 * -------------------------------------------------
-                 * DARK RECESSED BAY
-                 * -------------------------------------------------
-                 */
-                addBox(
-                    builder,
-                    attributes,
-                    2.65f,
-                    7.8f,
-                    0.30f,
-                    WING_RECESS,
-                    wingX,
-                    4.65f,
-                    -20.30f
-                );
-
-                /*
-                 * -------------------------------------------------
-                 * LEFT / RIGHT VERTICAL PIERS OF BAY
-                 * -------------------------------------------------
-                 */
-                float pierOffset = 1.55f;
-
-                addBox(
-                    builder,
-                    attributes,
-                    0.62f,
-                    9.6f,
-                    1.15f,
-                    BRICK_DARK,
-                    wingX - pierOffset,
-                    4.8f,
-                    -20.48f
-                );
-
-                addBox(
-                    builder,
-                    attributes,
-                    0.62f,
-                    9.6f,
-                    1.15f,
-                    BRICK_DARK,
-                    wingX + pierOffset,
-                    4.8f,
-                    -20.48f
-                );
-
-                /*
-                 * -------------------------------------------------
-                 * ARCH BLOCKS
-                 *
-                 * Individual blocks follow a semicircular curve
-                 * in the X/Y plane.
-                 * -------------------------------------------------
-                 */
-                float wingArchRadius = 1.48f;
-                float wingArchCenterY = 7.05f;
-
-                float[] wingAngles = {
-                    15f, 30f, 45f, 60f,
-                    75f, 90f, 105f, 120f,
-                    135f, 150f, 165f
-                };
-
-                for (float wingAngle : wingAngles) {
-
-                    float wingRadians =
-                        wingAngle * MathUtils.degreesToRadians;
-
-                    float localX =
-                        wingArchRadius *
-                        MathUtils.cos(wingRadians);
-
-                    float localY =
-                        wingArchRadius *
-                        MathUtils.sin(wingRadians);
-
-                    /*
-                     * Mirror the arch geometry together with
-                     * the wing.
-                     */
-                    float finalX =
-                        wingX + (localX * side);
-
-                    float finalY =
-                        wingArchCenterY + localY;
-
-                    Model wingArchBlock =
-                        builder.createBox(
-                            0.52f,
-                            0.34f,
-                            0.42f,
-                            material(WING_ARCH),
-                            attributes
-                        );
-
-                    models.add(wingArchBlock);
-
-                    ModelInstance wingArchInstance =
-                        new ModelInstance(wingArchBlock);
-
-                    wingArchInstance.transform.setToTranslation(
-                        finalX,
-                        finalY,
-                        -20.55f
-                    );
-
-                    /*
-                     * Tangential orientation.
-                     */
-                    float rotation =
-                        wingAngle - 90f;
-
-                    if (side < 0) {
-                        rotation = -rotation;
-                    }
-
-                    wingArchInstance.transform.rotate(
-                        Vector3.Z,
-                        rotation
-                    );
-
-                    instances.add(wingArchInstance);
-                }
-
-                /*
-                 * -------------------------------------------------
-                 * SMALL ARCH BASE / SPRING BANDS
-                 * -------------------------------------------------
-                 */
-                addBox(
-                    builder,
-                    attributes,
-                    3.4f,
-                    0.32f,
-                    0.45f,
-                    WING_ARCH,
-                    wingX,
-                    5.95f,
-                    -20.55f
-                );
-            }
-        }
-
-        /*
-         * ---------------------------------------------------------
-         * UPPER LEVEL VISUAL BAND
-         *
-         * A continuous horizontal architectural line makes the
-         * wings read as two-storey historical masonry instead of
-         * one giant box.
-         * ---------------------------------------------------------
-         */
-
-        addBox(
-            builder,
-            attributes,
-            64f,
-            0.42f,
-            0.55f,
-            WING_ARCH,
-            0f,
-            9.85f,
-            -20.60f
-        );
-
-        /*
-         * Central interruption restores the tower hierarchy.
-         */
-        addBox(
-            builder,
-            attributes,
-            14f,
-            0.55f,
-            0.65f,
             BRICK_DARK,
             0f,
-            10.0f,
-            -20.62f
+            3.75f,
+            -8.8f
         );
 
-        System.out.println(
-            "CURZON HALL: Symmetrical wing arcades added."
-        );
-}
-
-    // =========================================================
-    // CURZON COLUMN
-    // =========================================================
-
-    private void createCurzonColumn(
-        ModelBuilder builder,
-        long attributes,
-        float x,
-        float y,
-        float z
-    ) {
-
-        Model column = builder.createCylinder(
-            0.72f,
-            5.6f,
-            0.72f,
-            16,
-            material(CREAM),
-            attributes
+        /*
+         * Central tower.
+         */
+        addBox(
+            builder,
+            attributes,
+            4f,
+            10f,
+            4f,
+            BRICK,
+            0f,
+            7f,
+            -13f
         );
 
-        models.add(column);
-
-        ModelInstance instance =
-            new ModelInstance(column);
-
-        instance.transform.setToTranslation(
-            x,
-            y,
-            z
-        );
-
-        instances.add(instance);
-    }
-
-
-    // =========================================================
-    // DETAILED CURZON WINDOWS
-    // =========================================================
-
-    private void createDetailedCurzonWindows(
-        ModelBuilder builder,
-        long attributes,
-        float startX,
-        float z
-    ) {
-
-        for (int i = 0; i < 4; i++) {
-
-            float x = startX + (i * 3.15f);
-
-            createCurzonWindow(
-                builder,
-                attributes,
-                x,
-                3.25f,
-                z - 3.78f,
-                1.45f,
-                2f
+        /*
+         * Tower roof.
+         */
+        Model roof =
+            builder.createCone(
+                3.3f,
+                3.8f,
+                3.3f,
+                4,
+                material(ROOF),
+                attributes
             );
 
-            createCurzonWindow(
-                builder,
-                attributes,
-                x,
-                5.25f,
-                z - 3.78f,
-                1.45f,
-                1.65f
-            );
-        }
+        models.add(roof);
+
+        ModelInstance roofInstance =
+            new ModelInstance(roof);
+
+        roofInstance.transform.setToTranslation(
+            0f,
+            12.8f,
+            -13f
+        );
+
+        instances.add(roofInstance);
+
+        /*
+         * Side towers.
+         */
+        createTower(
+            builder,
+            attributes,
+            -9f,
+            -13f
+        );
+
+        createTower(
+            builder,
+            attributes,
+            9f,
+            -13f
+        );
+
+        /*
+         * Windows.
+         */
+        createWindowRow(
+            builder,
+            attributes,
+            -7f,
+            -10f
+        );
+
+        createWindowRow(
+            builder,
+            attributes,
+            7f,
+            -10f
+        );
+
+        /*
+         * Entrance stairs.
+         */
+        addBox(
+            builder,
+            attributes,
+            10f,
+            0.25f,
+            3f,
+            PATH_LIGHT,
+            0f,
+            0.22f,
+            -7.5f
+        );
     }
 
     // =========================================================
-    // CURZON WINDOW
+    // TOWER
     // =========================================================
-
-    private void createCurzonWindow(
-        ModelBuilder builder,
-        long attributes,
-        float x,
-        float y,
-        float z,
-        float width,
-        float height
-    ) {
-
-        Color frame = CREAM;
-        Color glass = Color.valueOf("24343A");
-
-        // Glass
-        addBox(builder, attributes,
-            width, height, 0.16f,
-            glass,
-            x, y, z);
-
-        // Left frame
-        addBox(builder, attributes,
-            0.16f, height + 0.35f, 0.24f,
-            frame,
-            x - width * 0.48f,
-            y,
-            z - 0.04f);
-
-        // Right frame
-        addBox(builder, attributes,
-            0.16f, height + 0.35f, 0.24f,
-            frame,
-            x + width * 0.48f,
-            y,
-            z - 0.04f);
-
-        // Top frame
-        addBox(builder, attributes,
-            width + 0.35f, 0.18f, 0.24f,
-            frame,
-            x,
-            y + height * 0.50f,
-            z - 0.04f);
-
-        // Bottom frame
-        addBox(builder, attributes,
-            width + 0.35f, 0.18f, 0.24f,
-            frame,
-            x,
-            y - height * 0.50f,
-            z - 0.04f);
-
-        // Vertical mullion
-        addBox(builder, attributes,
-            0.10f, height, 0.28f,
-            frame,
-            x,
-            y,
-            z - 0.07f);
-
-        // Horizontal mullion
-        addBox(builder, attributes,
-            width, 0.10f, 0.28f,
-            frame,
-            x,
-            y,
-            z - 0.07f);
-    }
-
-    // =========================================================
-    // CURZON COLUMN
-    // =========================================================
-
-
 
     private void createTower(
         ModelBuilder builder,
@@ -2690,6 +1766,9 @@ public class Level1World implements Disposable {
         Color TRUNK_COLOR =
             Color.valueOf("5A402B");
 
+        Color BRANCH_COLOR =
+            Color.valueOf("65462D");
+
         Color LEAF_DARK =
             Color.valueOf("294B2B");
 
@@ -2722,6 +1801,18 @@ public class Level1World implements Disposable {
             );
 
         models.add(trunkModel);
+
+        Model branchModel =
+            builder.createCylinder(
+                0.24f,
+                3.0f,
+                0.24f,
+                8,
+                material(BRANCH_COLOR),
+                attributes
+            );
+
+        models.add(branchModel);
 
         Model leafLargeModel =
             builder.createSphere(
@@ -2847,6 +1938,7 @@ public class Level1World implements Disposable {
 
             createDetailedTree(
                 trunkModel,
+                branchModel,
                 leafLargeModel,
                 leafMediumModel,
                 leafSmallModel,
@@ -2922,6 +2014,7 @@ public class Level1World implements Disposable {
      */
     private void createDetailedTree(
         Model trunkModel,
+        Model branchModel,
         Model leafLargeModel,
         Model leafMediumModel,
         Model leafSmallModel,
@@ -2959,18 +2052,59 @@ public class Level1World implements Disposable {
 
         /*
          * ----------------------------------------------------
-         * MAIN LOWER CANOPY
+         * LEFT BRANCH
          * ----------------------------------------------------
-         *
-         * The tree previously also placed two bare "branch"
-         * cylinders here (unrotated, straight up from the
-         * trunk). Because they were taller than the gap
-         * between the trunk top and the leaf canopy, their
-         * lower half always poked out beneath the leaves,
-         * reading as a stray branch dangling out of the
-         * foliage. The canopy clusters below already read as
-         * a full tree without them, so they've been removed
-         * rather than re-angled.
+         */
+
+        ModelInstance leftBranch =
+            new ModelInstance(
+                branchModel
+            );
+
+        leftBranch.transform
+            .setToTranslation(
+                x - 1.15f * scale,
+                4.0f * scale,
+                z
+            );
+
+        leftBranch.transform.scale(
+            scale,
+            scale,
+            scale
+        );
+
+        instances.add(leftBranch);
+
+        /*
+         * ----------------------------------------------------
+         * RIGHT BRANCH
+         * ----------------------------------------------------
+         */
+
+        ModelInstance rightBranch =
+            new ModelInstance(
+                branchModel
+            );
+
+        rightBranch.transform
+            .setToTranslation(
+                x + 1.15f * scale,
+                4.15f * scale,
+                z + 0.15f
+            );
+
+        rightBranch.transform.scale(
+            scale,
+            scale,
+            scale
+        );
+
+        instances.add(rightBranch);
+
+        /*
+         * ----------------------------------------------------
+         * MAIN LOWER CANOPY
          * ----------------------------------------------------
          */
 
@@ -4020,12 +3154,6 @@ public class Level1World implements Disposable {
 
         totalTime += delta;
 
-        if (screenshotToastTimer > 0f) {
-            screenshotToastTimer -= delta;
-        }
-
-        handleMapInput();
-
         if (!levelCompleted) {
 
             updateCamera(delta);
@@ -4035,58 +3163,6 @@ public class Level1World implements Disposable {
             updateObjectiveMarker();
 
             updateMission(delta);
-        }
-    }
-
-    // =========================================================
-    // SCREENSHOT
-    // =========================================================
-
-    /**
-     * Called by {@link bd.historicalgame.world.World} after a
-     * screenshot has been written to disk, so the HUD can
-     * flash a brief confirmation.
-     */
-    public void notifyScreenshotSaved() {
-        screenshotToastTimer = 2.0f;
-    }
-
-    // =========================================================
-    // MAP INPUT (TOGGLE / TAGGING)
-    // =========================================================
-
-    /**
-     * M minimizes/expands the map, T drops a tag at the
-     * player's current position, and BACKSPACE removes the
-     * most recently placed tag. Available whenever the level
-     * is active, including after completion, so the player can
-     * still review the campus map.
-     */
-    private void handleMapInput() {
-
-        if (player == null) {
-            return;
-        }
-
-        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
-            mapExpanded = !mapExpanded;
-        }
-
-        if (Gdx.input.isKeyJustPressed(Input.Keys.T)) {
-
-            mapTags.add(
-                new Vector3(
-                    player.getX(),
-                    player.getY(),
-                    player.getZ()
-                )
-            );
-        }
-
-        if (Gdx.input.isKeyJustPressed(Input.Keys.BACKSPACE)
-            && mapTags.size > 0) {
-
-            mapTags.removeIndex(mapTags.size - 1);
         }
     }
 
@@ -4153,37 +3229,7 @@ public class Level1World implements Disposable {
     // RENDER
     // =========================================================
 
-    private void saveGameplayScreenshot() {
-        try {
-            FileHandle dir = com.badlogic.gdx.Gdx.files.local("screenshots");
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-
-            String filename = "level1_" +
-                    new java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new java.util.Date()) +
-                    ".png";
-
-            int width = com.badlogic.gdx.Gdx.graphics.getBackBufferWidth();
-            int height = com.badlogic.gdx.Gdx.graphics.getBackBufferHeight();
-
-            Pixmap pixmap = Pixmap.createFromFrameBuffer(0, 0, width, height);
-            PixmapIO.writePNG(dir.child(filename), pixmap);
-            pixmap.dispose();
-
-            System.out.println("SCREENSHOT SAVED: " + dir.child(filename).path());
-        } catch (Exception e) {
-            System.err.println("SCREENSHOT FAILED: " + e.getMessage());
-        }
-    }
-
     public void render() {
-        if (!SCREENSHOT_TRIGGERED_FOR_LEVEL1) {
-            SCREENSHOT_TRIGGERED_FOR_LEVEL1 = true;
-            saveGameplayScreenshot();
-        }
-
-
 
         int width =
             Gdx.graphics.getWidth();
@@ -4269,30 +3315,6 @@ public class Level1World implements Disposable {
 
         spriteBatch.begin();
 
-        if (screenshotToastTimer > 0f) {
-
-            BitmapFont toastFont = hudFont(0.85f * scale);
-
-            toastFont.setColor(
-                1f, 1f, 1f,
-                Math.min(1f, screenshotToastTimer)
-            );
-
-            String toastText = "SCREENSHOT SAVED";
-
-            GlyphLayout toastLayout =
-                new GlyphLayout(toastFont, toastText);
-
-            toastFont.draw(
-                spriteBatch,
-                toastText,
-                w / 2f - toastLayout.width / 2f,
-                h - 24f * scale
-            );
-
-            toastFont.setColor(Color.WHITE);
-        }
-
         float titleScale = 1.45f * scale;
         float bodyScale = 0.92f * scale;
         float smallScale = 0.78f * scale;
@@ -4347,8 +3369,7 @@ public class Level1World implements Disposable {
         hintFont.setColor(Color.WHITE);
 
         String controlsHint =
-            "W A S D  MOVE     SHIFT / SPACE  JUMP     MOUSE  CAMERA     R  RESET     " +
-            "M  MAP     T  TAG LOCATION     F12  SCREENSHOT     ESC  PAUSE";
+            "W A S D  MOVE     SHIFT / SPACE  JUMP     MOUSE  CAMERA     R  RESET     ESC  PAUSE";
 
         GlyphLayout controlsLayout =
             new GlyphLayout(hintFont, controlsHint);
@@ -4441,76 +3462,35 @@ public class Level1World implements Disposable {
     }
 
     // =========================================================
-    // MINI MAP (RADAR) / EXPANDABLE MAP
+    // MINI MAP (RADAR)
     // =========================================================
 
     private static final float MINIMAP_RADIUS = 76f;
     private static final float MINIMAP_RANGE = 32f;
 
     /**
-     * Range shown once the map is expanded (M). Wider than the
-     * corner radar so most of the campus fits on screen at once.
-     */
-    private static final float MAP_EXPANDED_RANGE = 95f;
-
-    /**
-     * Chooses between the small corner radar and the large
-     * centered map, then delegates to the shared renderer.
+     * Circular radar in the top-right corner. Rotates with the
+     * camera so the player's current facing direction always
+     * points to the top of the disc (same convention as the
+     * on-screen directional arrow), with a dot per mission
+     * target and a highlighted dot for the current objective.
      */
     private void renderMiniMap() {
-
-        renderMap(mapExpanded);
-    }
-
-    /**
-     * Circular radar/map. Rotates with the camera so the
-     * player's current facing direction always points to the
-     * top of the disc (same convention as the on-screen
-     * directional arrow), with a dot per mission target, a
-     * highlighted dot for the current objective, and a marker
-     * per player-placed location tag.
-     *
-     * In its default (minimized) state this draws as a small
-     * disc tucked into the top-right corner. Pressing M expands
-     * it into a large, centered map with room for tag labels;
-     * pressing M again shrinks it back down to the corner.
-     */
-    private void renderMap(boolean expanded) {
 
         float w = Gdx.graphics.getWidth();
         float h = Gdx.graphics.getHeight();
 
         float scale = Math.max(1f, h / 1080f);
 
-        float radius =
-            expanded
-                ? Math.min(w, h) * 0.36f
-                : MINIMAP_RADIUS * scale;
+        float radius = MINIMAP_RADIUS * scale;
+        float margin = 26f * scale;
 
-        float range =
-            expanded
-                ? MAP_EXPANDED_RANGE
-                : MINIMAP_RANGE;
-
-        float centerX;
-        float centerY;
-
-        if (expanded) {
-
-            centerX = w / 2f;
-            centerY = h / 2f;
-
-        } else {
-
-            float margin = 26f * scale;
-
-            centerX = w - margin - radius;
-            centerY = h - margin - radius;
-        }
+        float centerX = w - margin - radius;
+        float centerY = h - margin - radius;
 
         /*
          * Same forward/right convention as
-         * getCameraRelativeArrow(), so the map and the
+         * getCameraRelativeArrow(), so the radar and the
          * on-screen compass arrow always agree.
          */
         float yawRad =
@@ -4529,24 +3509,14 @@ public class Level1World implements Disposable {
         hudShapes.begin(ShapeRenderer.ShapeType.Filled);
 
         /*
-         * Dim the whole screen behind the expanded map so the
-         * 3D scene doesn't compete for attention with the map.
-         */
-        if (expanded) {
-
-            hudShapes.setColor(0f, 0f, 0f, 0.55f);
-            hudShapes.rect(0f, 0f, w, h);
-        }
-
-        /*
          * Ring border: a slightly larger gold disc behind a
          * smaller dark disc, leaving a thin gold rim visible.
          */
         hudShapes.setColor(0.90f, 0.72f, 0.25f, 0.55f);
-        hudShapes.circle(centerX, centerY, radius + 3f * scale, 64);
+        hudShapes.circle(centerX, centerY, radius + 3f * scale, 48);
 
         hudShapes.setColor(0.03f, 0.045f, 0.055f, 0.90f);
-        hudShapes.circle(centerX, centerY, radius, 64);
+        hudShapes.circle(centerX, centerY, radius, 48);
 
         /*
          * Mission markers.
@@ -4572,10 +3542,10 @@ public class Level1World implements Disposable {
             } else {
 
                 float clampedDist =
-                    Math.min(worldDist, range);
+                    Math.min(worldDist, MINIMAP_RANGE);
 
                 float mapDist =
-                    (clampedDist / range)
+                    (clampedDist / MINIMAP_RANGE)
                         * (radius - 8f * scale);
 
                 float mapRight =
@@ -4611,73 +3581,12 @@ public class Level1World implements Disposable {
         }
 
         /*
-         * Player-placed location tags. Screen positions are
-         * cached so the label pass below (a separate
-         * spriteBatch block) doesn't need to redo the
-         * world-to-map projection.
-         */
-        float[] tagScreenX = new float[mapTags.size];
-        float[] tagScreenY = new float[mapTags.size];
-
-        for (int i = 0; i < mapTags.size; i++) {
-
-            Vector3 tag = mapTags.get(i);
-
-            float dx = tag.x - player.getX();
-            float dz = tag.z - player.getZ();
-
-            float worldDist =
-                (float) Math.sqrt(dx * dx + dz * dz);
-
-            float mapX;
-            float mapY;
-
-            if (worldDist < 0.001f) {
-
-                mapX = 0f;
-                mapY = 0f;
-
-            } else {
-
-                float clampedDist =
-                    Math.min(worldDist, range);
-
-                float mapDist =
-                    (clampedDist / range)
-                        * (radius - 8f * scale);
-
-                float mapRight =
-                    (dx * rightX + dz * rightZ) / worldDist;
-
-                float mapUp =
-                    (dx * forwardX + dz * forwardZ) / worldDist;
-
-                mapX = mapRight * mapDist;
-                mapY = mapUp * mapDist;
-            }
-
-            tagScreenX[i] = centerX + mapX;
-            tagScreenY[i] = centerY + mapY;
-
-            hudShapes.setColor(0.36f, 0.85f, 0.90f, 1f);
-
-            float tagSize = (expanded ? 5.5f : 3.5f) * scale;
-
-            hudShapes.rect(
-                tagScreenX[i] - tagSize / 2f,
-                tagScreenY[i] - tagSize / 2f,
-                tagSize,
-                tagSize
-            );
-        }
-
-        /*
-         * Player marker, fixed at the map's center. Since the
-         * map rotates with the camera, this always points up.
+         * Player marker, fixed at the radar's center. Since the
+         * radar rotates with the camera, this always points up.
          */
         hudShapes.setColor(0.94f, 0.96f, 0.98f, 1f);
 
-        float triSize = (expanded ? 9f : 7f) * scale;
+        float triSize = 7f * scale;
 
         hudShapes.triangle(
             centerX, centerY + triSize,
@@ -4692,7 +3601,7 @@ public class Level1World implements Disposable {
          */
         hudShapes.begin(ShapeRenderer.ShapeType.Line);
         hudShapes.setColor(0.90f, 0.72f, 0.25f, 0.9f);
-        hudShapes.circle(centerX, centerY, radius, 64);
+        hudShapes.circle(centerX, centerY, radius, 48);
         hudShapes.end();
 
         String label =
@@ -4702,9 +3611,7 @@ public class Level1World implements Disposable {
                     Math.min(missionIndex, missionTitles.length - 1)
                 ];
 
-        BitmapFont labelFont =
-            hudFont((expanded ? 0.9f : 0.62f) * scale);
-
+        BitmapFont labelFont = hudFont(0.62f * scale);
         labelFont.setColor(Color.valueOf("E8BC55"));
 
         GlyphLayout labelLayout =
@@ -4719,85 +3626,7 @@ public class Level1World implements Disposable {
             centerY - radius - 10f * scale
         );
 
-        /*
-         * Numbered labels above each tag marker. Only drawn
-         * when expanded; the minimized radar is too small for
-         * legible text next to every dot.
-         */
-        if (expanded) {
-
-            BitmapFont tagFont = hudFont(0.55f * scale);
-            tagFont.setColor(Color.valueOf("5DD9E0"));
-
-            for (int i = 0; i < mapTags.size; i++) {
-
-                String tagLabel = "TAG " + (i + 1);
-
-                GlyphLayout tagLayout =
-                    new GlyphLayout(tagFont, tagLabel);
-
-                tagFont.draw(
-                    spriteBatch,
-                    tagLabel,
-                    tagScreenX[i] - tagLayout.width / 2f,
-                    tagScreenY[i] + 14f * scale
-                );
-            }
-        }
-
-        /*
-         * Control hint: a short reminder under the corner radar,
-         * a fuller one under the expanded map.
-         */
-        BitmapFont hintFont =
-            hudFont((expanded ? 0.62f : 0.5f) * scale);
-
-        hintFont.setColor(1f, 1f, 1f, expanded ? 0.85f : 0.55f);
-
-        String hint =
-            expanded
-                ? "T  TAG LOCATION     BACKSPACE  REMOVE LAST TAG     M  MINIMIZE MAP"
-                : "M  MAP";
-
-        GlyphLayout hintLayout =
-            new GlyphLayout(hintFont, hint);
-
-        float hintY =
-            expanded
-                ? centerY - radius - 28f * scale
-                : centerY - radius - 22f * scale;
-
-        hintFont.draw(
-            spriteBatch,
-            hint,
-            centerX - hintLayout.width / 2f,
-            hintY
-        );
-
         spriteBatch.end();
-    }
-
-    // =========================================================
-    // RESIZE
-    // =========================================================
-
-    /**
-     * Keeps the 3D camera's aspect ratio matched to the actual
-     * window size whenever the player resizes the game window
-     * or toggles fullscreen. The HUD needs no equivalent call:
-     * it already reads {@code Gdx.graphics.getWidth()/getHeight()}
-     * fresh every frame.
-     */
-    public void resize(int width, int height) {
-
-        if (camera == null) {
-            return;
-        }
-
-        camera.viewportWidth = Math.max(1, width);
-        camera.viewportHeight = Math.max(1, height);
-
-        camera.update();
     }
 
     // =========================================================

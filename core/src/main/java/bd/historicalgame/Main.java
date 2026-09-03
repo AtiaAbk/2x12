@@ -3,10 +3,12 @@ package bd.historicalgame;
 import bd.historicalgame.game.GameManager;
 import bd.historicalgame.game.GameState;
 import bd.historicalgame.ui.UIManager;
+import bd.historicalgame.utils.ScreenshotManager;
 import bd.historicalgame.world.World;
 
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Graphics;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.utils.ScreenUtils;
 
@@ -252,6 +254,33 @@ public class Main extends ApplicationAdapter {
     // =========================================================
 
     private void handleInput() {
+
+        // =====================================================
+        // GLOBAL: SCREENSHOT
+        // =====================================================
+
+        /*
+         * Works in every state (menus, gameplay, paused) so the
+         * player never has to be in a specific screen to capture
+         * one.
+         */
+        if (Gdx.input.isKeyJustPressed(
+            Input.Keys.F12
+        )) {
+
+            takeScreenshot();
+        }
+
+        // =====================================================
+        // GLOBAL: TOGGLE FULLSCREEN / WINDOWED
+        // =====================================================
+
+        if (Gdx.input.isKeyJustPressed(
+            Input.Keys.F11
+        )) {
+
+            toggleFullscreen();
+        }
 
         GameState state =
             gameManager.getCurrentState();
@@ -683,6 +712,78 @@ public class Main extends ApplicationAdapter {
         world = new World();
 
         gameManager.startLevel1();
+    }
+
+    // =========================================================
+    // SCREENSHOT
+    // =========================================================
+
+    /**
+     * Default windowed size the game returns to when the
+     * player leaves fullscreen with F11.
+     */
+    private static final int WINDOWED_WIDTH = 1280;
+    private static final int WINDOWED_HEIGHT = 720;
+
+    private void takeScreenshot() {
+
+        String savedPath =
+            ScreenshotManager.capture();
+
+        /*
+         * Show a brief on-screen confirmation while in a level.
+         * On menu screens the console log from capture() is
+         * confirmation enough.
+         */
+        if (savedPath != null && world != null) {
+
+            world.notifyScreenshotSaved();
+        }
+    }
+
+    // =========================================================
+    // FULLSCREEN / WINDOWED TOGGLE
+    // =========================================================
+
+    private void toggleFullscreen() {
+
+        if (Gdx.graphics.isFullscreen()) {
+
+            Gdx.graphics.setWindowedMode(
+                WINDOWED_WIDTH,
+                WINDOWED_HEIGHT
+            );
+
+        } else {
+
+            Graphics.DisplayMode currentMode =
+                Gdx.graphics.getDisplayMode();
+
+            Gdx.graphics.setFullscreenMode(
+                currentMode
+            );
+        }
+    }
+
+    // =========================================================
+    // RESIZE
+    // =========================================================
+
+    /**
+     * Keeps the UI stage and the 3D camera's aspect ratio in
+     * sync whenever the player resizes the window, maximizes
+     * it, or toggles fullscreen.
+     */
+    @Override
+    public void resize(int width, int height) {
+
+        if (uiManager != null) {
+            uiManager.resize(width, height);
+        }
+
+        if (world != null) {
+            world.resize(width, height);
+        }
     }
 
     // =========================================================

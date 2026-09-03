@@ -24,12 +24,23 @@ public class Player {
     private static final float ACCELERATION = 18f;
     private static final float DECELERATION = 22f;
     private static final float VELOCITY_EPSILON = 0.01f;
-    private static final float COLLISION_RADIUS = 0.6f;
+    /*
+     * Slightly smaller footprint keeps the character visually
+     * proportional to the campus architecture while preserving
+     * stable building collision.
+     */
+    private static final float COLLISION_RADIUS = 0.48f;
 
-    private static final float MIN_X = -28f;
-    private static final float MAX_X = 28f;
-    private static final float MIN_Z = -18f;
-    private static final float MAX_Z = 18f;
+    /*
+     * Keep these values synchronized with GameConfig.
+     *
+     * The playable campus is intentionally much larger than the
+     * original compact prototype area.
+     */
+    private static final float MIN_X = -70f;
+    private static final float MAX_X = 70f;
+    private static final float MIN_Z = -52f;
+    private static final float MAX_Z = 52f;
 
     private static final float GROUND_Y = 1.0f;
     private static final float GRAVITY = 24f;
