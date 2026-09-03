@@ -819,70 +819,263 @@ public class Level1World implements Disposable {
         long attributes
     ) {
 
-        // Main north-south path
+        /*
+         * Main north-south pedestrian avenue.
+         *
+         * The base path is deliberately wider than the original
+         * prototype path to make the campus feel more walkable.
+         */
         addBox(
             builder,
             attributes,
-            12f,
-            0.18f,
-            40f,
+            13.5f,
+            0.16f,
+            42f,
             PATH,
             0f,
-            0.12f,
+            0.10f,
             0f
         );
 
-        // Main east-west path
+        /*
+         * Subtle light stone shoulders.
+         */
         addBox(
             builder,
             attributes,
-            55f,
-            0.17f,
-            7f,
+            0.65f,
+            0.08f,
+            42f,
+            PATH_LIGHT,
+            -6.75f,
+            0.20f,
+            0f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.65f,
+            0.08f,
+            42f,
+            PATH_LIGHT,
+            6.75f,
+            0.20f,
+            0f
+        );
+
+        /*
+         * Main east-west avenue.
+         */
+        addBox(
+            builder,
+            attributes,
+            58f,
+            0.16f,
+            7.5f,
             PATH_LIGHT,
             0f,
-            0.13f,
+            0.11f,
             5f
         );
 
-        // Curzon approach
+        /*
+         * Darker central road surface.
+         */
         addBox(
             builder,
             attributes,
-            16f,
+            58f,
+            0.05f,
+            5.9f,
+            PATH,
+            0f,
+            0.20f,
+            5f
+        );
+
+        /*
+         * East-west path shoulders.
+         */
+        addBox(
+            builder,
+            attributes,
+            58f,
+            0.06f,
+            0.55f,
+            PATH_LIGHT,
+            0f,
+            0.20f,
+            1.35f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            58f,
+            0.06f,
+            0.55f,
+            PATH_LIGHT,
+            0f,
+            0.20f,
+            8.65f
+        );
+
+        /*
+         * Curzon Hall approach.
+         */
+        addBox(
+            builder,
+            attributes,
+            17f,
             0.17f,
-            9f,
+            10f,
             PATH_LIGHT,
             0f,
             0.14f,
             -8f
         );
 
-        // Library path
+        /*
+         * Curzon approach center surface.
+         */
         addBox(
             builder,
             attributes,
-            10f,
+            13.5f,
+            0.05f,
+            8.8f,
+            PATH,
+            0f,
+            0.23f,
+            -8f
+        );
+
+        /*
+         * Library path.
+         */
+        addBox(
+            builder,
+            attributes,
+            11f,
             0.16f,
-            18f,
+            19f,
             PATH,
             -17f,
             0.12f,
             0f
         );
 
-        // TSC path
+        /*
+         * Library path stone edge.
+         */
         addBox(
             builder,
             attributes,
-            10f,
+            0.55f,
+            0.07f,
+            19f,
+            PATH_LIGHT,
+            -22.45f,
+            0.20f,
+            0f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.55f,
+            0.07f,
+            19f,
+            PATH_LIGHT,
+            -11.55f,
+            0.20f,
+            0f
+        );
+
+        /*
+         * TSC path.
+         */
+        addBox(
+            builder,
+            attributes,
+            11f,
             0.16f,
-            18f,
+            19f,
             PATH,
             17f,
             0.12f,
             0f
         );
+
+        /*
+         * TSC path stone edge.
+         */
+        addBox(
+            builder,
+            attributes,
+            0.55f,
+            0.07f,
+            19f,
+            PATH_LIGHT,
+            11.55f,
+            0.20f,
+            0f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.55f,
+            0.07f,
+            19f,
+            PATH_LIGHT,
+            22.45f,
+            0.20f,
+            0f
+        );
+
+        /*
+         * ----------------------------------------------------
+         * WALKWAY TILE BREAKS
+         * ----------------------------------------------------
+         *
+         * Small transverse strips break the long flat surfaces
+         * into visually readable paving sections.
+         */
+
+        Color TILE =
+            Color.valueOf("76644D");
+
+        for (int z = -18; z <= 18; z += 4) {
+
+            addBox(
+                builder,
+                attributes,
+                12.2f,
+                0.025f,
+                0.10f,
+                TILE,
+                0f,
+                0.235f,
+                z
+            );
+        }
+
+        for (int x = -27; x <= 27; x += 4) {
+
+            addBox(
+                builder,
+                attributes,
+                0.10f,
+                0.025f,
+                6.0f,
+                TILE,
+                x,
+                0.235f,
+                5f
+            );
+        }
     }
 
     // =========================================================
@@ -894,30 +1087,95 @@ public class Level1World implements Disposable {
         long attributes
     ) {
 
+        Color LAWN =
+            Color.valueOf("587C46");
+
+        Color LAWN_EDGE =
+            Color.valueOf("466638");
+
+        Color LAWN_CENTER =
+            Color.valueOf("638B50");
+
+        /*
+         * Main lawn area.
+         *
+         * The lawn sits beneath the central pedestrian network,
+         * giving the campus a large green heart instead of a
+         * single flat green rectangle.
+         */
         addBox(
             builder,
             attributes,
-            20f,
-            0.12f,
-            14f,
-            Color.valueOf("567744"),
+            28f,
+            0.10f,
+            18f,
+            LAWN,
             0f,
-            0.08f,
+            0.055f,
             5f
         );
 
         /*
-         * Decorative central circle.
+         * Darker lawn border.
+         */
+        addBox(
+            builder,
+            attributes,
+            29f,
+            0.045f,
+            0.45f,
+            LAWN_EDGE,
+            0f,
+            0.14f,
+            -4f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            29f,
+            0.045f,
+            0.45f,
+            LAWN_EDGE,
+            0f,
+            0.14f,
+            14f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.45f,
+            0.045f,
+            17.5f,
+            LAWN_EDGE,
+            -14.25f,
+            0.14f,
+            5f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            0.45f,
+            0.045f,
+            17.5f,
+            LAWN_EDGE,
+            14.25f,
+            0.14f,
+            5f
+        );
+
+        /*
+         * Decorative central oval/circle.
          */
         Model circle =
             builder.createCylinder(
-                5.5f,
-                0.15f,
-                5.5f,
+                5.8f,
+                0.10f,
+                5.8f,
                 32,
-                material(
-                    Color.valueOf("6F8F55")
-                ),
+                material(LAWN_CENTER),
                 attributes
             );
 
@@ -928,11 +1186,93 @@ public class Level1World implements Disposable {
 
         circleInstance.transform.setToTranslation(
             0f,
-            0.18f,
+            0.16f,
             5f
         );
 
         instances.add(circleInstance);
+
+        /*
+         * Smaller central feature.
+         *
+         * This creates visual layering without introducing a
+         * gameplay obstacle.
+         */
+        Model innerCircle =
+            builder.createCylinder(
+                3.8f,
+                0.055f,
+                3.8f,
+                32,
+                material(
+                    Color.valueOf("6E955A")
+                ),
+                attributes
+            );
+
+        models.add(innerCircle);
+
+        ModelInstance innerCircleInstance =
+            new ModelInstance(innerCircle);
+
+        innerCircleInstance.transform.setToTranslation(
+            0f,
+            0.22f,
+            5f
+        );
+
+        instances.add(innerCircleInstance);
+
+        /*
+         * Small decorative lawn islands.
+         */
+        addBox(
+            builder,
+            attributes,
+            3.0f,
+            0.06f,
+            1.4f,
+            LAWN_CENTER,
+            -10f,
+            0.13f,
+            10.5f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            3.0f,
+            0.06f,
+            1.4f,
+            LAWN_CENTER,
+            10f,
+            0.13f,
+            10.5f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            3.0f,
+            0.06f,
+            1.4f,
+            LAWN_CENTER,
+            -10f,
+            0.13f,
+            -0.5f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            3.0f,
+            0.06f,
+            1.4f,
+            LAWN_CENTER,
+            10f,
+            0.13f,
+            -0.5f
+        );
     }
 
     // =========================================================
@@ -2068,15 +2408,54 @@ public class Level1World implements Disposable {
         long attributes
     ) {
 
-        for (int i = 0; i < 30; i++) {
+        /*
+         * Keep flowers mostly around lawn/path edges rather than
+         * randomly placing them over the main walking surfaces.
+         */
+        float[][] flowerPositions = {
 
-            float x =
-                -30f +
-                ((i * 17) % 60);
+            {-11f, 10.5f},
+            {-9.5f, 11.0f},
+            {-8f, 10.4f},
+            {-6.5f, 11.1f},
 
-            float z =
-                -20f +
-                ((i * 13) % 40);
+            {11f, 10.5f},
+            {9.5f, 11.0f},
+            {8f, 10.4f},
+            {6.5f, 11.1f},
+
+            {-11f, -0.5f},
+            {-9.5f, -0.1f},
+            {-8f, -0.6f},
+            {-6.5f, -0.1f},
+
+            {11f, -0.5f},
+            {9.5f, -0.1f},
+            {8f, -0.6f},
+            {6.5f, -0.1f},
+
+            {-24f, 10f},
+            {-24.5f, 7f},
+            {-24f, 4f},
+            {-24.5f, 1f},
+
+            {24f, 10f},
+            {24.5f, 7f},
+            {24f, 4f},
+            {24.5f, 1f},
+
+            {-5f, 15f},
+            {0f, 15.5f},
+            {5f, 15f},
+            {-5f, -5f},
+            {0f, -5.5f},
+            {5f, -5f}
+        };
+
+        for (int i = 0; i < flowerPositions.length; i++) {
+
+            float x = flowerPositions[i][0];
+            float z = flowerPositions[i][1];
 
             Model flower =
                 builder.createSphere(
