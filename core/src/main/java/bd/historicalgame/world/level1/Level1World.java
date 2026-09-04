@@ -1955,6 +1955,105 @@ public class Level1World implements Disposable {
         
         // COMMIT_D_WING_ARCADES
 
+
+// COMMIT_F_ROOF_EAVES
+// Curzon Hall roof silhouette: stepped cornices + broad projecting eaves.
+// No giant central dome — skyline remains historically restrained.
+
+// ===============================
+// MAIN WING ROOF / PARAPET
+// ===============================
+
+// Low roof mass behind the parapet
+addBox(builder, attributes,
+        86f, 0.75f, 18.0f,
+        Color.rgb565(0.42f, 0.18f, 0.10f),
+        0f, 11.85f, -20.5f);
+
+// Broad projecting eave
+addBox(builder, attributes,
+        91f, 0.55f, 23.5f,
+        Color.LIGHT_GRAY,
+        0f, 11.35f, -20.5f);
+
+// Upper stepped cornice
+addBox(builder, attributes,
+        89f, 0.45f, 22.5f,
+        Color.LIGHT_GRAY,
+        0f, 12.25f, -20.5f);
+
+// Narrow brick parapet
+addBox(builder, attributes,
+        87f, 0.95f, 20.0f,
+        Color.rgb565(0.50f, 0.22f, 0.12f),
+        0f, 12.75f, -20.5f);
+
+// Front shadow-catching cornice
+addBox(builder, attributes,
+        89f, 0.35f, 1.15f,
+        Color.LIGHT_GRAY,
+        0f, 10.95f, -9.05f);
+
+// ===============================
+// CENTRAL TOWER ROOF STACK
+// ===============================
+
+// Tower roof base
+addBox(builder, attributes,
+        16.0f, 0.55f, 9.0f,
+        Color.rgb565(0.45f, 0.19f, 0.11f),
+        0f, 20.15f, -16.0f);
+
+// First projecting cornice
+addBox(builder, attributes,
+        17.0f, 0.42f, 9.8f,
+        Color.LIGHT_GRAY,
+        0f, 20.55f, -16.0f);
+
+// Second stepped cornice
+addBox(builder, attributes,
+        16.4f, 0.38f, 9.3f,
+        Color.rgb565(0.52f, 0.24f, 0.13f),
+        0f, 20.95f, -16.0f);
+
+// Deep tower eave
+addBox(builder, attributes,
+        18.0f, 0.50f, 10.2f,
+        Color.LIGHT_GRAY,
+        0f, 21.35f, -16.0f);
+
+// Tower parapet
+addBox(builder, attributes,
+        15.6f, 0.90f, 8.7f,
+        Color.rgb565(0.50f, 0.22f, 0.12f),
+        0f, 21.85f, -16.0f);
+
+// Small top platform
+addBox(builder, attributes,
+        13.8f, 0.38f, 7.4f,
+        Color.LIGHT_GRAY,
+        0f, 22.30f, -16.0f);
+
+// ===============================
+// CENTRAL FRONT EAVE / CORNICE
+// ===============================
+
+addBox(builder, attributes,
+        17.5f, 0.42f, 1.20f,
+        Color.LIGHT_GRAY,
+        0f, 19.45f, -20.45f);
+
+addBox(builder, attributes,
+        16.8f, 0.34f, 0.95f,
+        Color.rgb565(0.52f, 0.24f, 0.13f),
+        0f, 19.85f, -20.50f);
+
+// Decorative stepped horizontal band
+addBox(builder, attributes,
+        14.8f, 0.32f, 0.75f,
+        Color.LIGHT_GRAY,
+        0f, 20.35f, -20.55f);
+
 // COMMIT_E_CENTRAL_WINDOW_NICHE
 // Large cream masonry arch surrounding the three central upper windows.
 
