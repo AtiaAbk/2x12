@@ -1967,7 +1967,7 @@ public class Level1World implements Disposable {
 // Low roof mass behind the parapet
 addBox(builder, attributes,
         86f, 0.75f, 18.0f,
-        Color.rgb565(0.42f, 0.18f, 0.10f),
+        new Color(0.42f, 0.18f, 0.10f, 1f),
         0f, 11.85f, -20.5f);
 
 // Broad projecting eave
@@ -1985,7 +1985,7 @@ addBox(builder, attributes,
 // Narrow brick parapet
 addBox(builder, attributes,
         87f, 0.95f, 20.0f,
-        Color.rgb565(0.50f, 0.22f, 0.12f),
+        new Color(0.50f, 0.22f, 0.12f, 1f),
         0f, 12.75f, -20.5f);
 
 // Front shadow-catching cornice
@@ -2001,7 +2001,7 @@ addBox(builder, attributes,
 // Tower roof base
 addBox(builder, attributes,
         16.0f, 0.55f, 9.0f,
-        Color.rgb565(0.45f, 0.19f, 0.11f),
+        new Color(0.45f, 0.19f, 0.11f, 1f),
         0f, 20.15f, -16.0f);
 
 // First projecting cornice
@@ -2013,7 +2013,7 @@ addBox(builder, attributes,
 // Second stepped cornice
 addBox(builder, attributes,
         16.4f, 0.38f, 9.3f,
-        Color.rgb565(0.52f, 0.24f, 0.13f),
+        new Color(0.52f, 0.24f, 0.13f, 1f),
         0f, 20.95f, -16.0f);
 
 // Deep tower eave
@@ -2025,7 +2025,7 @@ addBox(builder, attributes,
 // Tower parapet
 addBox(builder, attributes,
         15.6f, 0.90f, 8.7f,
-        Color.rgb565(0.50f, 0.22f, 0.12f),
+        new Color(0.50f, 0.22f, 0.12f, 1f),
         0f, 21.85f, -16.0f);
 
 // Small top platform
@@ -2045,7 +2045,7 @@ addBox(builder, attributes,
 
 addBox(builder, attributes,
         16.8f, 0.34f, 0.95f,
-        Color.rgb565(0.52f, 0.24f, 0.13f),
+        new Color(0.52f, 0.24f, 0.13f, 1f),
         0f, 19.85f, -20.50f);
 
 // Decorative stepped horizontal band
