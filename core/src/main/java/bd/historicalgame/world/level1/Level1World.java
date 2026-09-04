@@ -1954,6 +1954,95 @@ public class Level1World implements Disposable {
 
         
         // COMMIT_D_WING_ARCADES
+
+// COMMIT_E_CENTRAL_WINDOW_NICHE
+// Large cream masonry arch surrounding the three central upper windows.
+
+// Niche side piers
+addBox(builder, attributes,
+        0.65f, 4.4f, 0.55f,
+        CREAM_MASONRY,
+        -6.15f, 12.45f, -20.32f);
+
+addBox(builder, attributes,
+        0.65f, 4.4f, 0.55f,
+        CREAM_MASONRY,
+         6.15f, 12.45f, -20.32f);
+
+// Lower horizontal niche sill / belt
+addBox(builder, attributes,
+        12.3f, 0.55f, 0.55f,
+        CREAM_MASONRY,
+        0f, 10.25f, -20.32f);
+
+// Large curved arch ring
+float nicheRadius = 6.15f;
+float nicheCenterY = 10.55f;
+int nicheSegments = 16;
+
+for (int i = 0; i <= nicheSegments; i++) {
+    float angle = 180f - (180f * i / nicheSegments);
+    float radians = angle * MathUtils.degreesToRadians;
+
+    float x = MathUtils.cos(radians) * nicheRadius;
+    float y = nicheCenterY + MathUtils.sin(radians) * nicheRadius;
+
+    Model nicheBlock = builder.createBox(
+            0.85f, 0.42f, 0.58f,
+            CREAM_MASONRY,
+            attributes
+    );
+
+    ModelInstance nicheInstance = new ModelInstance(nicheBlock);
+    nicheInstance.transform.setToTranslation(x, y, -20.34f);
+
+    // Tangential rotation follows the curvature of the arch.
+    nicheInstance.transform.rotate(
+            Vector3.Z,
+            angle - 90f
+    );
+
+    instances.add(nicheInstance);
+    models.add(nicheBlock);
+}
+
+// Second smaller stepped arch accent
+float accentRadius = 5.55f;
+float accentCenterY = 10.55f;
+int accentSegments = 14;
+
+for (int i = 0; i <= accentSegments; i++) {
+    float angle = 180f - (180f * i / accentSegments);
+    float radians = angle * MathUtils.degreesToRadians;
+
+    float x = MathUtils.cos(radians) * accentRadius;
+    float y = accentCenterY + MathUtils.sin(radians) * accentRadius;
+
+    Model accentBlock = builder.createBox(
+            0.48f, 0.26f, 0.42f,
+            CREAM_MASONRY,
+            attributes
+    );
+
+    ModelInstance accentInstance = new ModelInstance(accentBlock);
+    accentInstance.transform.setToTranslation(x, y, -20.39f);
+
+    accentInstance.transform.rotate(
+            Vector3.Z,
+            angle - 90f
+    );
+
+    instances.add(accentInstance);
+    models.add(accentBlock);
+}
+
+// Central top keystone
+addBox(builder, attributes,
+        1.05f, 0.72f, 0.65f,
+        CREAM_MASONRY,
+        0f, 16.75f, -20.40f);
+
+
         /*
          * =====================================================
          * CURZON HALL — SYMMETRICAL WING ARCADES
