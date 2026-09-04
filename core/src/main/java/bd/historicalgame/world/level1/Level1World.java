@@ -5,6 +5,7 @@ import bd.historicalgame.game.GameConfig;
 import bd.historicalgame.player.Player;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -365,7 +366,16 @@ public class Level1World implements Disposable {
     // CONSTRUCTOR
     // =========================================================
 
-    public Level1World() {
+    
+    // COMMIT_H_CAMERA_ZOOM
+    // Adjustable third-person camera zoom.
+    private float cameraZoomDistance = 13.0f;
+
+    private static final float CAMERA_ZOOM_MIN = 5.0f;
+    private static final float CAMERA_ZOOM_MAX = 30.0f;
+    private static final float CAMERA_ZOOM_STEP = 1.25f;
+
+public Level1World() {
 
         modelBatch =
             new ModelBatch();
@@ -5051,4 +5061,54 @@ addBox(builder, attributes,
         playerHead = null;
         objectiveMarker = null;
     }
+
+    // COMMIT_H_CAMERA_ZOOM
+    // Mouse wheel + macOS trackpad scroll/pinch-compatible zoom.
+    private void handleCameraZoom(float amount) {
+        cameraZoomDistance += amount * CAMERA_ZOOM_STEP;
+
+        if (cameraZoomDistance < CAMERA_ZOOM_MIN) {
+            cameraZoomDistance = CAMERA_ZOOM_MIN;
+        }
+
+        if (cameraZoomDistance > CAMERA_ZOOM_MAX) {
+            cameraZoomDistance = CAMERA_ZOOM_MAX;
+        }
+
+        updateCameraZoomDistance();
+    }
+
+    private void updateCameraZoomDistance() {
+        // Update the camera position using the current zoom distance.
+        // Existing camera target/rotation remains unchanged.
+        if (camera != null && player != null) {
+            Vector3 direction = new Vector3(
+                    camera.position.x - player.getPosition().x,
+                    0f,
+                    camera.position.z - player.getPosition().z
+            );
+
+            if (direction.len2() > 0.001f) {
+                direction.nor();
+
+                camera.position.x =
+                        player.getPosition().x +
+                        direction.x * cameraZoomDistance;
+
+                camera.position.z =
+                        player.getPosition().z +
+                        direction.z * cameraZoomDistance;
+
+                camera.lookAt(
+                        player.getPosition().x,
+                        player.getPosition().y + 1.0f,
+                        player.getPosition().z
+                );
+
+                camera.up.set(Vector3.Y);
+                camera.update();
+            }
+        }
+    }
+
 }
