@@ -1961,18 +1961,18 @@ public class Level1World implements Disposable {
 // Niche side piers
 addBox(builder, attributes,
         0.65f, 4.4f, 0.55f,
-        CREAM_MASONRY,
+        Color.LIGHT_GRAY,
         -6.15f, 12.45f, -20.32f);
 
 addBox(builder, attributes,
         0.65f, 4.4f, 0.55f,
-        CREAM_MASONRY,
+        Color.LIGHT_GRAY,
          6.15f, 12.45f, -20.32f);
 
 // Lower horizontal niche sill / belt
 addBox(builder, attributes,
         12.3f, 0.55f, 0.55f,
-        CREAM_MASONRY,
+        Color.LIGHT_GRAY,
         0f, 10.25f, -20.32f);
 
 // Large curved arch ring
@@ -1989,7 +1989,7 @@ for (int i = 0; i <= nicheSegments; i++) {
 
     Model nicheBlock = builder.createBox(
             0.85f, 0.42f, 0.58f,
-            CREAM_MASONRY,
+            material(Color.LIGHT_GRAY),
             attributes
     );
 
@@ -2020,7 +2020,7 @@ for (int i = 0; i <= accentSegments; i++) {
 
     Model accentBlock = builder.createBox(
             0.48f, 0.26f, 0.42f,
-            CREAM_MASONRY,
+            material(Color.LIGHT_GRAY),
             attributes
     );
 
@@ -2039,7 +2039,7 @@ for (int i = 0; i <= accentSegments; i++) {
 // Central top keystone
 addBox(builder, attributes,
         1.05f, 0.72f, 0.65f,
-        CREAM_MASONRY,
+        Color.LIGHT_GRAY,
         0f, 16.75f, -20.40f);
 
 
