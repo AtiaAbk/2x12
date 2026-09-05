@@ -2378,7 +2378,305 @@ addBox(builder, attributes,
         System.out.println(
             "CURZON HALL: Symmetrical wing arcades added."
         );
+
+        // =====================================================
+        // COMMIT_I_CHHATRI_KIOSKS
+        // =====================================================
+        /*
+         * HISTORICAL ROOFTOP CHHATRIS / KIOSKS
+         *
+         * The reference architecture uses small domed terrace
+         * pavilions rather than one giant central dome.
+         *
+         * Main tower:
+         *   - four corner kiosks
+         *
+         * Wings:
+         *   - smaller intermittent kiosks
+         *
+         * All placements are mirrored around X = 0.
+         */
+
+        final Color CHHATRI_COLUMN =
+            Color.valueOf("D2BF99");
+
+        final Color CHHATRI_CAP =
+            Color.valueOf("784238");
+
+        final Color CHHATRI_DARK =
+            Color.valueOf("5E332C");
+
+        /*
+         * -----------------------------------------------------
+         * 1. FOUR PRINCIPAL CENTRAL-TOWER CHHATRIS
+         *
+         * The tower roof currently reaches approximately Y=22.5.
+         * These pavilions sit above that roofline without creating
+         * a giant dome.
+         * -----------------------------------------------------
+         */
+
+        float[] kioskX = {
+            -6.1f, 6.1f
+        };
+
+        float[] kioskZ = {
+            -19.0f, -13.0f
+        };
+
+        for (float kioskXPos : kioskX) {
+
+            for (float kioskZPos : kioskZ) {
+
+                createChhatriKiosk(
+                    builder,
+                    attributes,
+                    kioskXPos,
+                    22.75f,
+                    kioskZPos,
+                    1.45f,
+                    2.35f
+                );
+            }
+        }
+
+        /*
+         * -----------------------------------------------------
+         * 2. SMALLER WING KIOSKS
+         *
+         * Intermittent roof pavilions break the long horizontal
+         * silhouette and make the wings feel more historically
+         * articulated.
+         *
+         * They are deliberately smaller than the tower kiosks.
+         * -----------------------------------------------------
+         */
+
+        float[] wingKioskX = {
+            -28.0f, -18.0f, 18.0f, 28.0f
+        };
+
+        for (float x : wingKioskX) {
+
+            createChhatriKiosk(
+                builder,
+                attributes,
+                x,
+                13.75f,
+                -20.5f,
+                1.05f,
+                1.75f
+            );
+        }
+
+        /*
+         * Smaller terminal accents.
+         */
+        createChhatriKiosk(
+            builder,
+            attributes,
+            -37.5f,
+            14.0f,
+            -20.5f,
+            0.90f,
+            1.55f
+        );
+
+        createChhatriKiosk(
+            builder,
+            attributes,
+            37.5f,
+            14.0f,
+            -20.5f,
+            0.90f,
+            1.55f
+        );
+
+        System.out.println(
+            "CURZON HALL: Historical chhatri/kiosk roof pavilions added."
+        );
 }
+
+    // =========================================================
+    // CHHATRI / KIOSK HELPER
+    // =========================================================
+
+    private void createChhatriKiosk(
+        ModelBuilder builder,
+        long attributes,
+        float x,
+        float baseY,
+        float z,
+        float radius,
+        float totalHeight
+    ) {
+
+        /*
+         * -----------------------------------------------------
+         * SLENDER SUPPORT COLUMNS
+         * -----------------------------------------------------
+         */
+
+        float columnHeight =
+            totalHeight * 0.58f;
+
+        float columnRadius =
+            radius * 0.13f;
+
+        float columnOffset =
+            radius * 0.58f;
+
+        float columnY =
+            baseY + (columnHeight * 0.5f);
+
+        float[] offsets = {
+            -columnOffset,
+            columnOffset
+        };
+
+        for (float dx : offsets) {
+
+            for (float dz : offsets) {
+
+                Model column =
+                    builder.createCylinder(
+                        columnRadius * 2f,
+                        columnHeight,
+                        columnRadius * 2f,
+                        10,
+                        material(CHHATRI_COLUMN),
+                        attributes
+                    );
+
+                models.add(column);
+
+                ModelInstance columnInstance =
+                    new ModelInstance(column);
+
+                columnInstance.transform.setToTranslation(
+                    x + dx,
+                    columnY,
+                    z + dz
+                );
+
+                instances.add(columnInstance);
+            }
+        }
+
+        /*
+         * -----------------------------------------------------
+         * SMALL PLATFORM / CAPITAL BAND
+         * -----------------------------------------------------
+         */
+
+        float platformY =
+            baseY + columnHeight;
+
+        addBox(
+            builder,
+            attributes,
+            radius * 1.75f,
+            radius * 0.16f,
+            radius * 1.75f,
+            CHHATRI_COLUMN,
+            x,
+            platformY,
+            z
+        );
+
+        /*
+         * -----------------------------------------------------
+         * DOMED CAP BASE
+         * -----------------------------------------------------
+         */
+
+        float domeBaseY =
+            platformY + radius * 0.10f;
+
+        Model dome =
+            builder.createSphere(
+                radius * 1.55f,
+                radius * 0.95f,
+                radius * 1.55f,
+                12,
+                8,
+                material(CHHATRI_CAP),
+                attributes
+            );
+
+        models.add(dome);
+
+        ModelInstance domeInstance =
+            new ModelInstance(dome);
+
+        domeInstance.transform.setToTranslation(
+            x,
+            domeBaseY + radius * 0.42f,
+            z
+        );
+
+        instances.add(domeInstance);
+
+        /*
+         * -----------------------------------------------------
+         * SMALL ONION-LIKE TOP
+         * -----------------------------------------------------
+         */
+
+        Model cap =
+            builder.createCone(
+                radius * 0.72f,
+                radius * 0.72f,
+                radius * 0.72f,
+                12,
+                material(CHHATRI_DARK),
+                attributes
+            );
+
+        models.add(cap);
+
+        ModelInstance capInstance =
+            new ModelInstance(cap);
+
+        capInstance.transform.setToTranslation(
+            x,
+            baseY + totalHeight - (radius * 0.28f),
+            z
+        );
+
+        instances.add(capInstance);
+
+        /*
+         * -----------------------------------------------------
+         * SMALL FINIAL
+         * -----------------------------------------------------
+         */
+
+        Model finial =
+            builder.createSphere(
+                radius * 0.34f,
+                radius * 0.34f,
+                radius * 0.34f,
+                10,
+                8,
+                material(CHHATRI_COLUMN),
+                attributes
+            );
+
+        models.add(finial);
+
+        ModelInstance finialInstance =
+            new ModelInstance(finial);
+
+        finialInstance.transform.setToTranslation(
+            x,
+            baseY + totalHeight + radius * 0.02f,
+            z
+        );
+
+        instances.add(finialInstance);
+    }
+
 
     // =========================================================
     // CURZON COLUMN
