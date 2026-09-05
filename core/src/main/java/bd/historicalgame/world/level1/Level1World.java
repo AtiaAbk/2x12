@@ -2511,6 +2511,17 @@ addBox(builder, attributes,
         float totalHeight
     ) {
 
+        // Materials are local to this helper so the kiosk
+        // can be created independently of createCurzonHall().
+        final Color CHHATRI_COLUMN =
+            Color.valueOf("D2BF99");
+
+        final Color CHHATRI_CAP =
+            Color.valueOf("784238");
+
+        final Color CHHATRI_DARK =
+            Color.valueOf("5E332C");
+
         /*
          * -----------------------------------------------------
          * SLENDER SUPPORT COLUMNS
