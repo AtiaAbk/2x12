@@ -2380,6 +2380,46 @@ addBox(builder, attributes,
         );
 
         // =====================================================
+        // COMMIT_K_DETAILED_FACADE_WINDOWS
+        // =====================================================
+        /*
+         * DETAILED UPPER-LEVEL FACADE WINDOWS
+         *
+         * The long wings receive a repeated symmetrical rhythm
+         * of recessed dark windows with cream masonry frames.
+         *
+         * Central tower remains visually dominant.
+         */
+
+        /*
+         * LEFT WING
+         *
+         * Six windows between the terminal mass and tower.
+         */
+        createDetailedCurzonWindows(
+            builder,
+            attributes,
+            -34.5f,
+            -9.5f
+        );
+
+        /*
+         * RIGHT WING
+         *
+         * Mirrored six-window composition.
+         */
+        createDetailedCurzonWindows(
+            builder,
+            attributes,
+            10.5f,
+            -9.5f
+        );
+
+        System.out.println(
+            "CURZON HALL: Detailed symmetrical facade windows added."
+        );
+
+        // =====================================================
         // COMMIT_I_CHHATRI_KIOSKS
         // =====================================================
         /*
@@ -2494,6 +2534,200 @@ addBox(builder, attributes,
 
         System.out.println(
             "CURZON HALL: Historical chhatri/kiosk roof pavilions added."
+        );
+
+        // =====================================================
+        // COMMIT_J_DEEP_EAVE_BRACKETS
+        // =====================================================
+        /*
+         * DEEP PROJECTING EAVES + REPEATED BRACKETS
+         *
+         * The historical roofline is articulated with strong
+         * horizontal eaves and repeated supporting brackets.
+         *
+         * These are deliberately shallow decorative elements:
+         * they enrich the silhouette without changing the main
+         * architectural massing.
+         */
+
+        final Color EAVE_CREAM =
+            Color.valueOf("C9B88F");
+
+        final Color EAVE_DARK =
+            Color.valueOf("754338");
+
+        /*
+         * -----------------------------------------------------
+         * CENTRAL TOWER EAVE
+         * -----------------------------------------------------
+         */
+
+        addBox(
+            builder,
+            attributes,
+            15.8f,
+            0.55f,
+            9.15f,
+            EAVE_CREAM,
+            0f,
+            21.55f,
+            -16f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            14.9f,
+            0.38f,
+            8.65f,
+            EAVE_DARK,
+            0f,
+            22.02f,
+            -16f
+        );
+
+        /*
+         * -----------------------------------------------------
+         * CENTRAL TOWER REPEATED BRACKETS
+         * -----------------------------------------------------
+         */
+
+        float[] towerBracketX = {
+            -6.0f, -4.0f, -2.0f,
+             2.0f,  4.0f,  6.0f
+        };
+
+        for (float x : towerBracketX) {
+
+            addBox(
+                builder,
+                attributes,
+                0.55f,
+                1.05f,
+                0.65f,
+                EAVE_DARK,
+                x,
+                21.0f,
+                -11.75f
+            );
+
+            addBox(
+                builder,
+                attributes,
+                0.55f,
+                1.05f,
+                0.65f,
+                EAVE_DARK,
+                x,
+                21.0f,
+                -20.25f
+            );
+        }
+
+        /*
+         * -----------------------------------------------------
+         * LONG WING DEEP EAVES
+         * -----------------------------------------------------
+         */
+
+        addBox(
+            builder,
+            attributes,
+            89.5f,
+            0.48f,
+            1.35f,
+            EAVE_CREAM,
+            0f,
+            12.72f,
+            -9.45f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            89.5f,
+            0.48f,
+            1.35f,
+            EAVE_CREAM,
+            0f,
+            12.72f,
+            -31.55f
+        );
+
+        /*
+         * -----------------------------------------------------
+         * WING BRACKET RHYTHM
+         * -----------------------------------------------------
+         */
+
+        float[] bracketX = {
+            -39.0f, -35.5f, -32.0f, -28.5f,
+            -25.0f, -21.5f, -18.0f, -14.5f,
+            -11.0f, -7.5f, -4.0f,
+             4.0f,   7.5f,  11.0f,  14.5f,
+             18.0f,  21.5f, 25.0f, 28.5f,
+             32.0f,  35.5f, 39.0f
+        };
+
+        for (float x : bracketX) {
+
+            addBox(
+                builder,
+                attributes,
+                0.52f,
+                0.95f,
+                0.75f,
+                EAVE_DARK,
+                x,
+                12.05f,
+                -9.05f
+            );
+
+            addBox(
+                builder,
+                attributes,
+                0.52f,
+                0.95f,
+                0.75f,
+                EAVE_DARK,
+                x,
+                12.05f,
+                -31.95f
+            );
+        }
+
+        /*
+         * -----------------------------------------------------
+         * LOWER VERANDAH EAVE ACCENTS
+         * -----------------------------------------------------
+         */
+
+        addBox(
+            builder,
+            attributes,
+            89.0f,
+            0.30f,
+            0.75f,
+            EAVE_CREAM,
+            0f,
+            8.55f,
+            -8.55f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            89.0f,
+            0.30f,
+            0.75f,
+            EAVE_CREAM,
+            0f,
+            8.55f,
+            -32.45f
+        );
+
+        System.out.println(
+            "CURZON HALL: Deep projecting eaves and repeated brackets added."
         );
 }
 
@@ -2736,28 +2970,88 @@ addBox(builder, attributes,
         float z
     ) {
 
-        for (int i = 0; i < 4; i++) {
+        /*
+         * Six upper-level windows per wing.
+         *
+         * startX differs for left/right wing so the final
+         * composition remains mirrored around the tower.
+         */
 
-            float x = startX + (i * 3.15f);
+        for (int i = 0; i < 6; i++) {
 
+            float x = startX + (i * 4.0f);
+
+            /*
+             * Recessed upper window.
+             *
+             * The window sits on the front face of the main
+             * 22m-deep building body.
+             */
             createCurzonWindow(
                 builder,
                 attributes,
                 x,
-                3.25f,
-                z - 3.78f,
-                1.45f,
-                2f
+                8.15f,
+                z,
+                2.0f,
+                2.45f
             );
 
-            createCurzonWindow(
+            /*
+             * Decorative sill.
+             */
+            addBox(
                 builder,
                 attributes,
+                2.45f,
+                0.18f,
+                0.34f,
+                CREAM,
                 x,
-                5.25f,
-                z - 3.78f,
-                1.45f,
-                1.65f
+                6.82f,
+                z - 0.10f
+            );
+
+            /*
+             * Small upper lintel band.
+             */
+            addBox(
+                builder,
+                attributes,
+                2.35f,
+                0.16f,
+                0.30f,
+                CREAM,
+                x,
+                9.48f,
+                z - 0.10f
+            );
+
+            /*
+             * Subtle vertical masonry accents.
+             */
+            addBox(
+                builder,
+                attributes,
+                0.12f,
+                2.75f,
+                0.30f,
+                CREAM,
+                x - 1.12f,
+                8.15f,
+                z - 0.10f
+            );
+
+            addBox(
+                builder,
+                attributes,
+                0.12f,
+                2.75f,
+                0.30f,
+                CREAM,
+                x + 1.12f,
+                8.15f,
+                z - 0.10f
             );
         }
     }
@@ -2832,6 +3126,26 @@ addBox(builder, attributes,
             x,
             y,
             z - 0.07f);
+
+        /*
+         * Upper decorative arch band.
+         *
+         * A shallow stepped profile keeps the window historical
+         * without turning every opening into a plain rectangle.
+         */
+        addBox(builder, attributes,
+            width + 0.22f, 0.16f, 0.28f,
+            frame,
+            x,
+            y + height * 0.57f,
+            z - 0.08f);
+
+        addBox(builder, attributes,
+            width * 0.72f, 0.12f, 0.30f,
+            frame,
+            x,
+            y + height * 0.65f,
+            z - 0.08f);
     }
 
     // =========================================================
