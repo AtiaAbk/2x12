@@ -2420,6 +2420,154 @@ addBox(builder, attributes,
         );
 
         // =====================================================
+        // COMMIT_L_JALI_BALUSTRADE
+        // =====================================================
+        /*
+         * VERANDAH BALUSTRADE / JALI DETAILS
+         *
+         * Small repeated masonry elements are placed along the
+         * upper edge of the front verandah. They are intentionally
+         * low-profile so that the main arches and tower remain
+         * visually dominant.
+         */
+
+        final Color JALI_MASONRY =
+            Color.valueOf("C8B58B");
+
+        final Color JALI_DARK =
+            Color.valueOf("6A3A32");
+
+        /*
+         * -----------------------------------------------------
+         * LONG FRONT BALUSTRADE BANDS
+         * -----------------------------------------------------
+         */
+
+        addBox(
+            builder,
+            attributes,
+            27.0f,
+            0.22f,
+            0.38f,
+            JALI_MASONRY,
+            -25.0f,
+            10.25f,
+            -8.05f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            27.0f,
+            0.22f,
+            0.38f,
+            JALI_MASONRY,
+            25.0f,
+            10.25f,
+            -8.05f
+        );
+
+        /*
+         * -----------------------------------------------------
+         * REPEATED BALUSTERS
+         * -----------------------------------------------------
+         */
+
+        float[] jaliX = {
+            -37.0f, -34.0f, -31.0f, -28.0f,
+            -25.0f, -22.0f, -19.0f, -16.0f,
+            16.0f,  19.0f,  22.0f,  25.0f,
+            28.0f,  31.0f,  34.0f,  37.0f
+        };
+
+        for (float x : jaliX) {
+
+            /*
+             * Vertical baluster.
+             */
+            addBox(
+                builder,
+                attributes,
+                0.18f,
+                0.85f,
+                0.18f,
+                JALI_MASONRY,
+                x,
+                9.75f,
+                -8.05f
+            );
+
+            /*
+             * Small cap.
+             */
+            addBox(
+                builder,
+                attributes,
+                0.30f,
+                0.12f,
+                0.26f,
+                JALI_MASONRY,
+                x,
+                10.25f,
+                -8.05f
+            );
+        }
+
+        /*
+         * -----------------------------------------------------
+         * MIRRORED LOWER ACCENT
+         * -----------------------------------------------------
+         */
+
+        addBox(
+            builder,
+            attributes,
+            27.0f,
+            0.20f,
+            0.30f,
+            JALI_DARK,
+            -25.0f,
+            9.20f,
+            -8.02f
+        );
+
+        addBox(
+            builder,
+            attributes,
+            27.0f,
+            0.20f,
+            0.30f,
+            JALI_DARK,
+            25.0f,
+            9.20f,
+            -8.02f
+        );
+
+        /*
+         * -----------------------------------------------------
+         * CENTRAL VERANDAH ACCENT
+         * -----------------------------------------------------
+         *
+         * Kept short so it does not cover the main entrance.
+         */
+
+        addBox(
+            builder,
+            attributes,
+            9.0f,
+            0.20f,
+            0.34f,
+            JALI_MASONRY,
+            0f,
+            9.85f,
+            -8.00f
+        );
+
+        System.out.println(
+            "CURZON HALL: Verandah jali and balustrade details added."
+        );
+
+        // =====================================================
         // COMMIT_I_CHHATRI_KIOSKS
         // =====================================================
         /*
