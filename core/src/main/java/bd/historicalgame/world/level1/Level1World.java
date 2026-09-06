@@ -2568,6 +2568,190 @@ addBox(builder, attributes,
         );
 
         // =====================================================
+        // COMMIT_M_VERANDAH_COLUMNS
+        // =====================================================
+        /*
+         * CONTINUOUS SHADED VERANDAH COLUMN RHYTHM
+         *
+         * Slender masonry columns reinforce the long verandah
+         * while keeping the central entrance unobstructed.
+         */
+
+        final Color VERANDAH_COLUMN =
+            Color.valueOf("C8B58B");
+
+        final Color VERANDAH_BASE =
+            Color.valueOf("8A5140");
+
+        /*
+         * -----------------------------------------------------
+         * FRONT VERANDAH COLUMNS
+         * -----------------------------------------------------
+         */
+
+        float[] verandahX = {
+            -38.0f, -34.0f, -30.0f, -26.0f,
+            -22.0f, -18.0f, -14.0f, -10.0f,
+             10.0f,  14.0f,  18.0f,  22.0f,
+             26.0f,  30.0f,  34.0f,  38.0f
+        };
+
+        for (float x : verandahX) {
+
+            /*
+             * Main slender shaft.
+             */
+            Model column =
+                builder.createCylinder(
+                    0.42f,
+                    7.0f,
+                    0.42f,
+                    10,
+                    material(VERANDAH_COLUMN),
+                    attributes
+                );
+
+            models.add(column);
+
+            ModelInstance columnInstance =
+                new ModelInstance(column);
+
+            columnInstance.transform.setToTranslation(
+                x,
+                3.9f,
+                -8.15f
+            );
+
+            instances.add(columnInstance);
+
+            /*
+             * Wider square base.
+             */
+            addBox(
+                builder,
+                attributes,
+                1.05f,
+                0.45f,
+                1.05f,
+                VERANDAH_BASE,
+                x,
+                0.45f,
+                -8.15f
+            );
+
+            /*
+             * Capital block.
+             */
+            addBox(
+                builder,
+                attributes,
+                1.15f,
+                0.32f,
+                1.15f,
+                VERANDAH_COLUMN,
+                x,
+                7.42f,
+                -8.15f
+            );
+
+            /*
+             * Small upper capital.
+             */
+            addBox(
+                builder,
+                attributes,
+                0.82f,
+                0.22f,
+                0.82f,
+                VERANDAH_BASE,
+                x,
+                7.68f,
+                -8.15f
+            );
+        }
+
+        /*
+         * -----------------------------------------------------
+         * INNER VERANDAH SHADOW LINE
+         * -----------------------------------------------------
+         */
+
+        addBox(
+            builder,
+            attributes,
+            76.0f,
+            0.28f,
+            0.32f,
+            VERANDAH_BASE,
+            0f,
+            7.82f,
+            -8.08f
+        );
+
+        /*
+         * -----------------------------------------------------
+         * CENTRAL ENTRANCE COLUMNS
+         *
+         * Slightly heavier than the wing columns to emphasize
+         * the main entrance.
+         * -----------------------------------------------------
+         */
+
+        for (float x : new float[]{-5.15f, 5.15f}) {
+
+            Model entranceColumn =
+                builder.createCylinder(
+                    0.52f,
+                    7.4f,
+                    0.52f,
+                    10,
+                    material(VERANDAH_COLUMN),
+                    attributes
+                );
+
+            models.add(entranceColumn);
+
+            ModelInstance entranceColumnInstance =
+                new ModelInstance(entranceColumn);
+
+            entranceColumnInstance.transform.setToTranslation(
+                x,
+                4.1f,
+                -10.15f
+            );
+
+            instances.add(entranceColumnInstance);
+
+            addBox(
+                builder,
+                attributes,
+                1.25f,
+                0.48f,
+                1.25f,
+                VERANDAH_BASE,
+                x,
+                0.48f,
+                -10.15f
+            );
+
+            addBox(
+                builder,
+                attributes,
+                1.40f,
+                0.35f,
+                1.40f,
+                VERANDAH_COLUMN,
+                x,
+                7.92f,
+                -10.15f
+            );
+        }
+
+        System.out.println(
+            "CURZON HALL: Verandah columns and capitals added."
+        );
+
+        // =====================================================
         // COMMIT_I_CHHATRI_KIOSKS
         // =====================================================
         /*
