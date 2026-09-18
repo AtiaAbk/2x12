@@ -313,9 +313,7 @@ public class Level1World implements Disposable {
         registerCollisions();
     }
 
-    // =========================================================
-    // LIGHTING
-    // =========================================================
+
 
     private void createLighting() {
 
