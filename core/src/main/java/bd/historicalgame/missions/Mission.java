@@ -22,12 +22,6 @@ public class Mission {
 
     private final String description;
 
-    /*
-     * Target position in the 3D Level 1 world.
-     *
-     * We only need X and Z because the player
-     * moves on the X/Z plane.
-     */
     private final float targetX;
 
     private final float targetZ;
