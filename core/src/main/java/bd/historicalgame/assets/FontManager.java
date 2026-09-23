@@ -8,22 +8,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFont
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.IntMap;
 
-/**
- * Central font factory for 2x12.
- *
- * The project used to call {@code new BitmapFont()} everywhere, which
- * loads libGDX's built-in 15px bitmap font, and then stretched it up
- * to whatever size a screen actually needed with
- * {@code setFontScale(...)}. Stretching a tiny bitmap font like that
- * is exactly what made every label, button and HUD readout look
- * "low resolution" / blurry / hard to read.
- *
- * This class instead renders each font directly at the exact pixel
- * size it will be displayed at, using FreeType and the bundled
- * Liberation Sans font (assets/fonts). Every size actually requested
- * is generated once and cached, so repeated calls are cheap and the
- * whole set is disposed together via {@link #dispose()}.
- */
+
 public final class FontManager implements Disposable {
 
     private static final String REGULAR_PATH = "fonts/LiberationSans-Regular.ttf";
