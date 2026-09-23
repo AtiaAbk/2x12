@@ -14,11 +14,7 @@ public final class FontManager implements Disposable {
     private static final String REGULAR_PATH = "fonts/LiberationSans-Regular.ttf";
     private static final String BOLD_PATH = "fonts/LiberationSans-Bold.ttf";
 
-    /**
-     * Extra characters (beyond the default Latin/number/punctuation
-     * set) used by the HUD: compass arrows, the objective diamond
-     * and the bullet separator.
-     */
+
     private static final String EXTRA_CHARS = "\u2191\u2193\u2192\u2190\u25C6\u2022";
 
     private final FreeTypeFontGenerator regularGenerator;
